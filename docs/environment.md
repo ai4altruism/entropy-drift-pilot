@@ -80,8 +80,10 @@ well inside the $100-500 ceiling with room for the pre-specified sensitivity swe
 - **HF auth (gated models):** `huggingface-cli login` or `HUGGING_FACE_HUB_TOKEN`; accept
   the Llama-3.1 license once on the Hub.
 - **Version pinning:** after install, capture `pip freeze > requirements-lock.txt` and
-  commit it for the run. Pin each model to a **specific Hub revision SHA** and record it
-  (see provenance below); "latest" is not reproducible.
+  commit it for the run. Pin each model to a **specific Hub revision SHA** via
+  `model.revision` in the config (it is applied at load and recorded); "latest" is not
+  reproducible. The manifest's `resolved` block auto-captures the git commit, resolved
+  model commit SHA, GPU / CUDA / torch, and the lockfile hash.
 
 ## 5. Reproducibility and provenance
 
@@ -126,7 +128,8 @@ Tracked so they are not lost:
 1. **vLLM completions backend** (true continuation, batched) for panel-scale throughput.
 2. ~~**Incremental / resumable result writing**~~ **done** (`run.py` flushes one record
    per problem; `--resume` continues, `--overwrite` restarts; config-hash guard on resume).
-3. **Extend `provenance.py`** to record model revision SHA, GPU name, CUDA/torch, lockfile
-   hash.
+3. ~~**Extend `provenance.py`**~~ **done** (manifest `resolved` block: git commit + dirty,
+   resolved model commit SHA, GPU / CUDA / torch, lockfile hash; `model.revision` pins the
+   load).
 4. ~~**Bootstrap-CI reporting**~~ **done** (`stats.py`; wired into `metrics.summarize`,
    `fpreduce.evaluate`, and the run output; `analysis.n_boot`/`analysis.alpha` config).

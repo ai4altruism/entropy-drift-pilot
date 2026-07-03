@@ -8,6 +8,7 @@
 backend: transformers
 model:
   name: Qwen/Qwen2.5-7B-Instruct
+  # revision: "<hub-commit-sha>"   # pin per the pre-registration before confirmatory runs
 dataset:
   name: gsm8k
   split: test
