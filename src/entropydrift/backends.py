@@ -129,6 +129,7 @@ class TransformersBackend:
         dtype: str = "auto",
         device: str = "auto",
         quantization: str = "none",
+        revision: str = "",
     ):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -137,9 +138,10 @@ class TransformersBackend:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.quantization = quantization
-        self.tokenizer = AutoTokenizer.from_pretrained(name)
+        self.revision = revision or None
+        self.tokenizer = AutoTokenizer.from_pretrained(name, revision=self.revision)
 
-        model_kwargs: dict = {"device_map": device}
+        model_kwargs: dict = {"device_map": device, "revision": self.revision}
         if quantization in ("4bit", "8bit"):
             # bitsandbytes path for small local GPUs (e.g. a 12GB card). NOT for the
             # confirmatory panel: quantization changes the output distribution the
@@ -276,6 +278,7 @@ def make_backend(cfg) -> Backend:
             temperature=cfg.sampling.temperature,
             max_tokens=cfg.sampling.max_tokens,
             quantization=m.quantization,
+            revision=m.revision,
         )
     if kind == "openai_compatible":
         return OpenAICompatibleBackend(
