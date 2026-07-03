@@ -12,6 +12,21 @@ generation. Hosted chat APIs do not expose this, so their prefix-in-prompt appro
 (`openai_compatible` backend) is reserved for sensitivity checks only. A rented single GPU
 runs the clean `transformers` path and keeps cost trivial at this scale.
 
+## 1a. Local dev box vs cloud (precision matters)
+
+A small local GPU (e.g. 12 GB) cannot hold a 7-8B model in fp16 (weights alone are
+~14-16 GB); it can only run **4-bit quantized** (~4 GB weights, fits with KV headroom).
+Quantization changes the output distribution the trajectories measure, so:
+
+- **Local 12 GB box, 4-bit:** development, plumbing, and the offline anchor smoke test
+  (`configs/smoke-local.yaml`). Also the pre-registered **quantization-robustness**
+  exploratory (4-bit vs fp16 on the anchor). Free and offline.
+- **Cloud GPU, fp16:** all **confirmatory** runs (H1-H5) and the panel, one precision
+  across all four models so the cross-model comparison (H4) is clean.
+
+Enable 4-bit with `model.quantization: 4bit` (needs `bitsandbytes`, in
+`requirements-local.txt`).
+
 ## 2. Hardware target
 
 - **Models:** four 7-8B open-weight models, run **one at a time** (sequential across the
@@ -85,11 +100,15 @@ pinned model revision + pinned deps + recorded configs, with results reported as
 
 1. Provision the GPU instance; clone the repo; install (Section 4).
 2. `pytest -q` and `python scripts/smoke_test.py` (mock, no model) to confirm plumbing.
-3. **Anchor smoke:** `python -m entropydrift.run --config configs/smoke.yaml`
-   (Qwen2.5-7B / GSM8K n=300). Confirm the shape signal reproduces Zhao before scaling.
-4. **Panel:** duplicate `configs/full.yaml` per (model x dataset) cell with a unique
+3. **Local real-model check (optional, 4-bit):** on the small GPU,
+   `python -m entropydrift.run --config configs/smoke-local.yaml` to confirm the harness
+   works against a real (quantized) model, offline.
+4. **Anchor smoke (confirmatory, fp16 on cloud):**
+   `python -m entropydrift.run --config configs/smoke.yaml` (Qwen2.5-7B / GSM8K n=300).
+   Confirm the shape signal reproduces Zhao before scaling.
+5. **Panel:** duplicate `configs/full.yaml` per (model x dataset) cell with a unique
    `run.name`; run each. Then `python scripts/fp_reduce.py results/<run-name>` per cell.
-5. Pull `results/` down (or push to object storage); **tear down the instance** to stop
+6. Pull `results/` down (or push to object storage); **tear down the instance** to stop
    billing.
 
 ## 7. Cost controls

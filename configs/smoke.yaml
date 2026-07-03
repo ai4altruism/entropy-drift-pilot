@@ -1,8 +1,10 @@
-# First real milestone: reproduce the shape signal on the anchor model.
-# Qwen2.5-7B-Instruct / GSM8K n=300. Requires requirements-local.txt + a GPU.
+# First real milestone: reproduce the shape signal on the anchor model, CONFIRMATORY.
+# Qwen2.5-7B-Instruct / GSM8K n=300, fp16 (quantization: none) on a cloud GPU (40GB+).
+# For a quick offline check on a small local GPU, use configs/smoke-local.yaml (4-bit).
 backend: transformers
 model:
   name: Qwen/Qwen2.5-7B-Instruct
+  quantization: none
 dataset:
   name: gsm8k
   split: test
