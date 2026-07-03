@@ -79,7 +79,9 @@ def run(cfg: Config, progress: bool = True) -> dict:
         if progress and (i + 1) % 25 == 0:
             print(f"  ...{i + 1}/{len(examples)}")
 
-    summary = summarize(records)
+    summary = summarize(
+        records, n_boot=cfg.analysis.n_boot, alpha=cfg.analysis.alpha, seed=cfg.run.seed
+    )
     _write_outputs(cfg, per_problem, summary)
     return summary
 

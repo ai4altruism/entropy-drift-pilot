@@ -17,6 +17,8 @@ from typing import Sequence
 
 import numpy as np
 
+from .stats import bootstrap_ci_indexed
+
 DEFAULT_FEATURES = ("violations", "final_confidence")
 
 
@@ -145,17 +147,29 @@ def at_coverage(p_correct, y, target_coverage: float) -> dict:
     }
 
 
+def _fp_reduction(test_records: Sequence[dict], p, y) -> float:
+    """FP-rate reduction of the learned filter over the monotonicity baseline, matched
+    to the baseline's coverage. Model is treated as fixed; only the evaluation set varies."""
+    baseline = monotone_baseline(test_records)
+    matched = at_coverage(p, y, baseline["coverage"])
+    if _isnan(baseline["false_pos_rate"]) or _isnan(matched["false_pos_rate"]):
+        return float("nan")
+    return baseline["false_pos_rate"] - matched["false_pos_rate"]
+
+
 def evaluate(
     records: Sequence[dict],
     feature_names: Sequence[str] = DEFAULT_FEATURES,
     test_frac: float = 0.4,
     seed: int = 0,
+    n_boot: int = 1000,
 ) -> dict:
     """Fit the filter on a train split, evaluate out-of-sample, compare to the baseline.
 
     Headline number: false-positive-rate reduction of the learned filter over the
     monotonicity rule, holding coverage fixed to the baseline's coverage (all on the
-    held-out test split).
+    held-out test split), with a 95% bootstrap CI that resamples the test set (the model
+    is held fixed, so the CI reflects evaluation-set sampling uncertainty).
     """
     X, y = features_matrix(records, feature_names)
     train_idx, test_idx = stratified_split(y, test_frac, seed)
@@ -166,11 +180,19 @@ def evaluate(
 
     baseline = monotone_baseline(test_records)
     matched = at_coverage(p_test, y_test, baseline["coverage"])
-    fp_reduction = (
-        baseline["false_pos_rate"] - matched["false_pos_rate"]
-        if not _isnan(baseline["false_pos_rate"]) and not _isnan(matched["false_pos_rate"])
-        else float("nan")
-    )
+    fp_reduction = _fp_reduction(test_records, p_test, y_test)
+
+    def _stat(idx: np.ndarray) -> float:
+        return _fp_reduction([test_records[i] for i in idx], p_test[idx], y_test[idx])
+
+    ci = bootstrap_ci_indexed(_stat, n=len(test_idx), n_boot=n_boot, seed=seed + 7)
+    ci_pp = {
+        k: (v * 100.0 if isinstance(v, float) and not _isnan(v) else v)
+        for k, v in ci.items()
+        if k in ("point", "lo", "hi")
+    }
+    ci_pp["n_effective"] = ci["n_effective"]
+
     return {
         "features": list(feature_names),
         "n_train": len(train_idx),
@@ -179,6 +201,7 @@ def evaluate(
         "baseline_monotone": baseline,
         "learned_at_baseline_coverage": matched,
         "fp_rate_reduction_pp": fp_reduction * 100.0 if not _isnan(fp_reduction) else float("nan"),
+        "fp_rate_reduction_ci_pp": ci_pp,
         "curve": triage_curve(p_test, y_test),
     }
 
@@ -204,4 +227,7 @@ def format_report(result: dict) -> str:
         "",
         f"FALSE-POSITIVE REDUCTION: {result['fp_rate_reduction_pp']:+.1f} pp",
     ]
+    ci = result.get("fp_rate_reduction_ci_pp")
+    if ci and not _isnan(ci.get("lo", float("nan"))):
+        lines.append(f"  95% bootstrap CI: [{ci['lo']:+.1f}, {ci['hi']:+.1f}] pp")
     return "\n".join(lines)
