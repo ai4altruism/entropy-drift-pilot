@@ -1,0 +1,4 @@
+# Extra deps for the local (GPU) transformers backend. Install on top of requirements.txt.
+torch>=2.2
+transformers>=4.44
+accelerate>=0.33

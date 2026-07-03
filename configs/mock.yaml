@@ -1,0 +1,15 @@
+# Offline smoke config: synthetic data + mock backend. No model, no network.
+backend: mock
+dataset:
+  name: synthetic
+  limit: 300
+sampling:
+  m: 5
+segmentation:
+  strategy: blank_line
+  max_steps: 8
+monotonicity:
+  eps: 0.01
+run:
+  seed: 0
+  name: mock-smoke
