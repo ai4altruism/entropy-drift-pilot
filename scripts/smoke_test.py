@@ -21,7 +21,7 @@ CONFIG = os.path.join(os.path.dirname(__file__), "..", "configs", "mock.yaml")
 def main() -> int:
     cfg = load_config(CONFIG)
     print(f"Smoke test: backend={cfg.backend}, dataset={cfg.dataset.name}, n={cfg.dataset.limit}")
-    summary = run(cfg, progress=False)
+    summary = run(cfg, progress=False, overwrite=True)
     print()
     print(format_report(summary))
     if summary["n"] == 0:
