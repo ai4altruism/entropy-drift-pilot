@@ -2,3 +2,4 @@
 torch>=2.2
 transformers>=4.44
 accelerate>=0.33
+bitsandbytes>=0.43   # 4-bit / 8-bit loading for small local GPUs (configs/smoke-local.yaml)

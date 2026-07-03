@@ -128,17 +128,37 @@ class TransformersBackend:
         max_tokens: int = 150,
         dtype: str = "auto",
         device: str = "auto",
+        quantization: str = "none",
     ):
-        import torch  # noqa: F401
+        import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         self.name = name
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.quantization = quantization
         self.tokenizer = AutoTokenizer.from_pretrained(name)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            name, torch_dtype=dtype, device_map=device
-        )
+
+        model_kwargs: dict = {"device_map": device}
+        if quantization in ("4bit", "8bit"):
+            # bitsandbytes path for small local GPUs (e.g. a 12GB card). NOT for the
+            # confirmatory panel: quantization changes the output distribution the
+            # trajectories measure, so headline runs stay fp16 (quantization="none").
+            from transformers import BitsAndBytesConfig
+
+            if quantization == "4bit":
+                model_kwargs["quantization_config"] = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch.bfloat16,
+                    bnb_4bit_use_double_quant=True,
+                )
+            else:
+                model_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
+        else:
+            model_kwargs["torch_dtype"] = dtype
+
+        self.model = AutoModelForCausalLM.from_pretrained(name, **model_kwargs)
 
     def _render(self, question: str, prefix: str) -> str:
         messages = [
@@ -252,7 +272,10 @@ def make_backend(cfg) -> Backend:
         )
     if kind == "transformers":
         return TransformersBackend(
-            name=m.name, temperature=cfg.sampling.temperature, max_tokens=cfg.sampling.max_tokens
+            name=m.name,
+            temperature=cfg.sampling.temperature,
+            max_tokens=cfg.sampling.max_tokens,
+            quantization=m.quantization,
         )
     if kind == "openai_compatible":
         return OpenAICompatibleBackend(

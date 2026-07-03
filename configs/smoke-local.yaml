@@ -1,0 +1,26 @@
+# Local dev smoke on a small GPU (e.g. 12GB): 4-bit quantized anchor model.
+# NOT a confirmatory run. Quantization is a different condition from Zhao's fp16, so the
+# headline replication (H1) and the panel run fp16 on cloud (configs/smoke.yaml, full.yaml).
+# Use this to confirm the harness works against a real model, offline and free.
+backend: transformers
+model:
+  name: Qwen/Qwen2.5-7B-Instruct
+  quantization: 4bit
+dataset:
+  name: gsm8k
+  split: test
+  limit: 100
+sampling:
+  m: 5
+  temperature: 0.7
+  max_tokens: 150
+segmentation:
+  strategy: blank_line
+  max_steps: 8
+monotonicity:
+  eps: 0.01
+analysis:
+  n_boot: 1000
+run:
+  seed: 0
+  name: qwen7b-4bit-gsm8k-100-local

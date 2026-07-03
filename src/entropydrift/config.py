@@ -12,6 +12,7 @@ class ModelCfg:
     name: str = "mock"
     base_url: str = ""
     api_key_env: str = "OPENAI_API_KEY"
+    quantization: str = "none"  # none | 4bit | 8bit (transformers backend, local dev only)
 
 
 @dataclass

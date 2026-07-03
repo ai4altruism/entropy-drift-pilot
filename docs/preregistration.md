@@ -40,6 +40,9 @@ the majority final answer vs the gold answer.
   used; there is no data-dependent or optional stopping.
 - **Seeds:** one primary seed per (model, dataset) cell; a 3-seed robustness check is a
   pre-specified secondary analysis (§10).
+- **Precision:** all confirmatory runs are **fp16** (the same precision across the whole
+  panel, so the H4 cross-model comparison is not confounded by quantization). 4-bit runs
+  appear only in the quantization-robustness exploratory (§10).
 
 ## 4. Confirmatory hypotheses and analyses
 
@@ -121,8 +124,10 @@ intended, publishable outcome.
 Reported as exploratory, not used to support confirmatory claims: epsilon robustness;
 segmentation-rule sensitivity beyond the primary; the m = 10/20 sweep on a dev subset;
 cross-model comparison of gap magnitudes; replication of the companion **step-level
-calibration-degradation** finding; a logit-based entropy variant (open-weight only); and
-early-exit triage (first k transitions).
+calibration-degradation** finding; a logit-based entropy variant (open-weight only);
+early-exit triage (first k transitions); and a **quantization-robustness** check comparing
+the shape signal under 4-bit vs fp16 on the anchor model (does quantization alter the
+entropy-trajectory profile?).
 
 ## 11. Deviations policy
 
