@@ -14,6 +14,8 @@ from typing import Sequence
 
 from scipy import stats
 
+from .stats import bootstrap_ci
+
 
 def _acc(records: Sequence[dict]) -> float:
     n = len(records)
@@ -85,15 +87,43 @@ def violation_signal(records: Sequence[dict], max_bucket: int = 3) -> dict:
     }
 
 
-def summarize(records: Sequence[dict]) -> dict:
-    """Full metrics bundle for a run."""
+def _gap_pp(records: Sequence[dict]) -> float:
+    return shape_signal(records)["gap_pp"]
+
+
+def _magnitude_rho(records: Sequence[dict]) -> float:
+    return magnitude_signal(records)["spearman_rho"]
+
+
+def _violation_rho(records: Sequence[dict]) -> float:
+    return violation_signal(records)["spearman_rho"]
+
+
+def bootstrap_summary(
+    records: Sequence[dict], n_boot: int = 1000, alpha: float = 0.05, seed: int = 0
+) -> dict:
+    """95% bootstrap CIs (pre-registered primary inference) for the headline statistics."""
     return {
+        "shape_gap_pp": bootstrap_ci(records, _gap_pp, n_boot, alpha, seed),
+        "magnitude_rho": bootstrap_ci(records, _magnitude_rho, n_boot, alpha, seed + 1),
+        "violation_rho": bootstrap_ci(records, _violation_rho, n_boot, alpha, seed + 2),
+    }
+
+
+def summarize(
+    records: Sequence[dict], n_boot: int = 0, alpha: float = 0.05, seed: int = 0
+) -> dict:
+    """Full metrics bundle for a run. If ``n_boot`` > 0, include bootstrap CIs."""
+    out = {
         "n": len(records),
         "overall_acc": _acc(records),
         "shape": shape_signal(records),
         "magnitude": magnitude_signal(records),
         "violations": violation_signal(records),
     }
+    if n_boot:
+        out["ci"] = bootstrap_summary(records, n_boot=n_boot, alpha=alpha, seed=seed)
+    return out
 
 
 def format_report(summary: dict) -> str:
@@ -120,4 +150,16 @@ def format_report(summary: dict) -> str:
     lines.append(
         f"  spearman_rho={v['spearman_rho']:+.3f}  p={v['p_value']:.2g}"
     )
+    if "ci" in summary:
+        ci = summary["ci"]
+        lines += [
+            "",
+            "95% BOOTSTRAP CI (pre-registered primary inference)",
+            f"  shape gap (pp): {ci['shape_gap_pp']['point']:+.1f}"
+            f"  [{ci['shape_gap_pp']['lo']:+.1f}, {ci['shape_gap_pp']['hi']:+.1f}]",
+            f"  magnitude rho:  {ci['magnitude_rho']['point']:+.3f}"
+            f"  [{ci['magnitude_rho']['lo']:+.3f}, {ci['magnitude_rho']['hi']:+.3f}]",
+            f"  violation rho:  {ci['violation_rho']['point']:+.3f}"
+            f"  [{ci['violation_rho']['lo']:+.3f}, {ci['violation_rho']['hi']:+.3f}]",
+        ]
     return "\n".join(lines)

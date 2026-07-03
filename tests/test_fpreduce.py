@@ -80,6 +80,10 @@ def test_learned_filter_reduces_false_positives():
     # reduce the false-positive rate
     assert learned["coverage"] > 0
     assert result["fp_rate_reduction_pp"] >= 0.0
+    # bootstrap CI present and well-formed
+    ci = result["fp_rate_reduction_ci_pp"]
+    assert ci["lo"] <= ci["hi"]
+    assert ci["n_effective"] > 0
 
 
 def test_monotone_baseline_fields():

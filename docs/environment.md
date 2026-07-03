@@ -107,4 +107,5 @@ Tracked so they are not lost:
 2. **Incremental / resumable result writing** in `run.py` (spot-safe, long-run-safe).
 3. **Extend `provenance.py`** to record model revision SHA, GPU name, CUDA/torch, lockfile
    hash.
-4. **Bootstrap-CI reporting** in `metrics.py` (primary inference per the pre-registration).
+4. ~~**Bootstrap-CI reporting**~~ **done** (`stats.py`; wired into `metrics.summarize`,
+   `fpreduce.evaluate`, and the run output; `analysis.n_boot`/`analysis.alpha` config).

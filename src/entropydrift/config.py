@@ -41,6 +41,12 @@ class MonotonicityCfg:
 
 
 @dataclass
+class AnalysisCfg:
+    n_boot: int = 1000  # bootstrap resamples for CIs (0 disables)
+    alpha: float = 0.05  # 1 - alpha = CI level (0.05 -> 95%)
+
+
+@dataclass
 class RunCfg:
     seed: int = 0
     out_dir: str = "results"
@@ -55,6 +61,7 @@ class Config:
     dataset: DatasetCfg = field(default_factory=DatasetCfg)
     segmentation: SegmentationCfg = field(default_factory=SegmentationCfg)
     monotonicity: MonotonicityCfg = field(default_factory=MonotonicityCfg)
+    analysis: AnalysisCfg = field(default_factory=AnalysisCfg)
     run: RunCfg = field(default_factory=RunCfg)
 
     def to_dict(self) -> dict:
@@ -67,6 +74,7 @@ _SECTIONS = {
     "dataset": DatasetCfg,
     "segmentation": SegmentationCfg,
     "monotonicity": MonotonicityCfg,
+    "analysis": AnalysisCfg,
     "run": RunCfg,
 }
 
