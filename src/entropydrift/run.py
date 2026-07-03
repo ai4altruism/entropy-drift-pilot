@@ -59,12 +59,17 @@ def run(cfg: Config, progress: bool = True) -> dict:
             continue  # not enough parseable steps to form a trajectory
 
         traj = entropy_trajectory(step_answers)
-        pred = _majority(step_answers[-1])
+        last = step_answers[-1]
+        pred = _majority(last)
+        # final-answer confidence = self-consistency agreement at the last step
+        final_confidence = last.count(pred) / len(last) if last else 0.0
         correct = pred == ex.gold
         rec = {
             "monotone": is_monotone(traj, eps),
             "violations": violation_count(traj, eps),
             "coherence": coherence(traj),
+            "final_confidence": final_confidence,
+            "final_entropy": traj[-1],
             "correct": correct,
         }
         records.append(rec)

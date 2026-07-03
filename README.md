@@ -34,12 +34,15 @@ src/entropydrift/   library
   metrics.py        shape-vs-magnitude stats, accuracy gaps (pure, tested)
   answers.py        GSM8K / MATH answer extraction + normalization (pure, tested)
   segment.py        step-segmentation strategies (pure, tested)
+  metrics.py        shape-vs-magnitude stats, accuracy gaps (pure, tested)
+  fpreduce.py       learned triage filter vs the monotonicity baseline (contribution 3)
   backends.py       generation backends: mock, openai-compatible, transformers
   datasets.py       GSM8K / MATH-500 loaders
   run.py            orchestration: build trajectories over a dataset, write results
   provenance.py     per-run manifest (config hash, seeds, versions)
 scripts/
   smoke_test.py     end-to-end on the mock backend (no model needed)
+  fp_reduce.py      post-hoc false-positive-reduction analysis over a completed run
 tests/              unit tests for the pure logic
 ```
 
@@ -69,3 +72,18 @@ before scaling the panel.
 ```bash
 python -m entropydrift.run --config configs/smoke.yaml
 ```
+
+## False-positive reduction (contribution 3)
+
+The bare "trust if monotone" rule has a high false-positive rate. `fpreduce.py` fits a
+small logistic filter over cheap signals (violation-count + final-answer confidence by
+default) and compares it to the monotonicity baseline out-of-sample. Run it over any
+completed run directory:
+
+```bash
+python scripts/fp_reduce.py results/<run-name>
+# writes results/<run-name>/fp_analysis.json (weights, baseline point, curve, FP reduction)
+```
+
+The full coverage-vs-selective-accuracy `curve` is the primary artifact; the matched-point
+FP-reduction number is a convenience summary (predicted probabilities are tied at small m).
