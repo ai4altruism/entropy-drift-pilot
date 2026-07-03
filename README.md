@@ -28,6 +28,7 @@ drop does not. See the plan and `src/entropydrift/trajectory.py`.
 ## Layout
 
 ```
+docs/               environment.md (compute setup), preregistration.md (OSF pre-reg)
 configs/            YAML run configs (smoke, full)
 src/entropydrift/   library
   trajectory.py     entropy / monotonicity / violation-count (pure, tested)
