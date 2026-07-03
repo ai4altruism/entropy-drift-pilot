@@ -260,6 +260,72 @@ class OpenAICompatibleBackend:
         return self._chat(messages, n=n, max_tokens=self.max_tokens)
 
 
+# --------------------------------------------------------------------------- vllm
+
+
+class VLLMBackend:
+    """In-process vLLM backend: true token-level prefix continuation, high throughput.
+
+    Renders the chat template with the tokenizer, appends the reasoning prefix, and submits
+    the result as a raw prompt to vLLM (so the continuation is genuine token-level, not the
+    prefix-in-prompt approximation). vLLM batches the ``n`` samples of each call via paged
+    attention, so this is the recommended path for the fp16 panel runs on cloud.
+
+    ``quantization`` is a **vLLM** method name (e.g. "awq", "gptq") or None; it is not the
+    bitsandbytes "4bit/8bit" of the transformers backend. Confirmatory runs are fp16
+    (quantization None).
+    """
+
+    def __init__(
+        self,
+        name: str,
+        temperature: float = 0.7,
+        max_tokens: int = 150,
+        quantization: str | None = None,
+        revision: str | None = None,
+        gpu_memory_utilization: float = 0.9,
+        max_model_len: int | None = None,
+        dtype: str = "auto",
+    ):
+        from vllm import LLM
+
+        self.name = name
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.llm = LLM(
+            model=name,
+            revision=revision or None,
+            quantization=quantization or None,
+            dtype=dtype,
+            gpu_memory_utilization=gpu_memory_utilization,
+            max_model_len=max_model_len,
+        )
+        self.tokenizer = self.llm.get_tokenizer()
+
+    def _render(self, question: str, prefix: str) -> str:
+        messages = [
+            {"role": "system", "content": _SYSTEM},
+            {"role": "user", "content": question},
+        ]
+        text = self.tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        return text + prefix
+
+    def _generate(self, prompt: str, n: int, max_tokens: int) -> list[str]:
+        from vllm import SamplingParams
+
+        sp = SamplingParams(n=n, temperature=self.temperature, max_tokens=max_tokens)
+        out = self.llm.generate([prompt], sp, use_tqdm=False)
+        return [o.text for o in out[0].outputs]
+
+    def reference_chain(self, question: str) -> str:
+        return self._generate(self._render(question, ""), n=1, max_tokens=self.max_tokens * 4)[0]
+
+    def continue_from(self, question: str, prefix: str, n: int) -> list[str]:
+        return self._generate(self._render(question, prefix), n=n, max_tokens=self.max_tokens)
+
+
 # --------------------------------------------------------------------------- factory
 
 
@@ -287,5 +353,16 @@ def make_backend(cfg) -> Backend:
             api_key_env=m.api_key_env,
             temperature=cfg.sampling.temperature,
             max_tokens=cfg.sampling.max_tokens,
+        )
+    if kind == "vllm":
+        return VLLMBackend(
+            name=m.name,
+            temperature=cfg.sampling.temperature,
+            max_tokens=cfg.sampling.max_tokens,
+            quantization=(None if m.quantization in ("none", "") else m.quantization),
+            revision=m.revision,
+            gpu_memory_utilization=cfg.vllm.gpu_memory_utilization,
+            max_model_len=cfg.vllm.max_model_len,
+            dtype=cfg.vllm.dtype,
         )
     raise ValueError(f"unknown backend: {kind!r}")

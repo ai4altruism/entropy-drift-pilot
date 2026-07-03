@@ -1,0 +1,4 @@
+# vLLM backend for panel-scale throughput on the cloud GPU (configs/full-vllm.yaml).
+# vLLM pins its own torch/CUDA build, so install this INSTEAD of requirements-local.txt
+# in the cloud env (a fresh venv), not on top of it, to avoid torch version conflicts.
+vllm>=0.6

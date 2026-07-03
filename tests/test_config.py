@@ -7,6 +7,22 @@ def test_defaults():
     assert c.model.quantization == "none"
     assert c.analysis.n_boot == 1000
     assert c.sampling.m == 5
+    assert c.vllm.gpu_memory_utilization == 0.9
+    assert c.vllm.max_model_len is None
+
+
+def test_from_dict_parses_vllm_section():
+    c = from_dict(
+        {
+            "backend": "vllm",
+            "model": {"name": "Qwen/Qwen2.5-7B-Instruct"},
+            "vllm": {"gpu_memory_utilization": 0.85, "max_model_len": 4096},
+        }
+    )
+    assert c.backend == "vllm"
+    assert c.vllm.gpu_memory_utilization == 0.85
+    assert c.vllm.max_model_len == 4096
+    assert c.vllm.dtype == "auto"
 
 
 def test_from_dict_parses_quantization_and_sections():

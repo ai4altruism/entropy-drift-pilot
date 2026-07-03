@@ -1,0 +1,30 @@
+# Panel run via vLLM (recommended for throughput on the cloud GPU). Same true token-level
+# continuation as the transformers backend, an order of magnitude faster. fp16 confirmatory.
+# Duplicate per (model x dataset) cell with a unique run.name; pin model.revision first.
+backend: vllm
+model:
+  name: Qwen/Qwen2.5-7B-Instruct
+  # revision: "<hub-commit-sha>"   # pin per the pre-registration before confirmatory runs
+dataset:
+  name: gsm8k
+  split: test
+  limit: 1319
+sampling:
+  m: 5
+  temperature: 0.7
+  max_tokens: 150
+segmentation:
+  strategy: blank_line
+  window_tokens: 40
+  max_steps: 8
+monotonicity:
+  eps: 0.01
+analysis:
+  n_boot: 1000
+vllm:
+  gpu_memory_utilization: 0.9
+  max_model_len: 4096   # cap KV cache; raise for the reasoning-distilled model if needed
+  dtype: auto
+run:
+  seed: 0
+  name: qwen7b-gsm8k-full-vllm

@@ -49,6 +49,13 @@ class AnalysisCfg:
 
 
 @dataclass
+class VLLMCfg:
+    gpu_memory_utilization: float = 0.9
+    max_model_len: int | None = None
+    dtype: str = "auto"
+
+
+@dataclass
 class RunCfg:
     seed: int = 0
     out_dir: str = "results"
@@ -64,6 +71,7 @@ class Config:
     segmentation: SegmentationCfg = field(default_factory=SegmentationCfg)
     monotonicity: MonotonicityCfg = field(default_factory=MonotonicityCfg)
     analysis: AnalysisCfg = field(default_factory=AnalysisCfg)
+    vllm: VLLMCfg = field(default_factory=VLLMCfg)
     run: RunCfg = field(default_factory=RunCfg)
 
     def to_dict(self) -> dict:
@@ -77,6 +85,7 @@ _SECTIONS = {
     "segmentation": SegmentationCfg,
     "monotonicity": MonotonicityCfg,
     "analysis": AnalysisCfg,
+    "vllm": VLLMCfg,
     "run": RunCfg,
 }
 
