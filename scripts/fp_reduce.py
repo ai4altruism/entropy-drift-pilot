@@ -19,7 +19,9 @@ from entropydrift.fpreduce import DEFAULT_FEATURES, evaluate, format_report
 def load_records(run_dir: str) -> list[dict]:
     path = os.path.join(run_dir, "records.jsonl")
     with open(path) as f:
-        return [json.loads(line) for line in f if line.strip()]
+        records = [json.loads(line) for line in f if line.strip()]
+    # keep only usable ('ok') records; skipped entries lack metric fields
+    return [r for r in records if r.get("status", "ok") == "ok"]
 
 
 def main() -> int:

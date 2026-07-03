@@ -115,15 +115,17 @@ pinned model revision + pinned deps + recorded configs, with results reported as
 
 - Spin the instance down when idle; models re-download from cache-on-disk if the volume
   persists, else budget re-download time.
-- Interruptible/spot instances are safe **once** incremental result writing lands (Open
-  code task) so a preemption does not lose a partial run.
+- Interruptible/spot instances are safe: records are written incrementally (one flushed
+  line per problem), so after a preemption just re-launch with `--resume` to continue from
+  the last completed problem. Use `--overwrite` to restart a run from scratch.
 
 ## 8. Open code tasks this plan surfaces
 
 Tracked so they are not lost:
 
 1. **vLLM completions backend** (true continuation, batched) for panel-scale throughput.
-2. **Incremental / resumable result writing** in `run.py` (spot-safe, long-run-safe).
+2. ~~**Incremental / resumable result writing**~~ **done** (`run.py` flushes one record
+   per problem; `--resume` continues, `--overwrite` restarts; config-hash guard on resume).
 3. **Extend `provenance.py`** to record model revision SHA, GPU name, CUDA/torch, lockfile
    hash.
 4. ~~**Bootstrap-CI reporting**~~ **done** (`stats.py`; wired into `metrics.summarize`,
