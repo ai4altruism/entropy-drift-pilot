@@ -37,7 +37,7 @@ src/entropydrift/   library
   segment.py        step-segmentation strategies (pure, tested)
   metrics.py        shape-vs-magnitude stats, accuracy gaps (pure, tested)
   fpreduce.py       learned triage filter vs the monotonicity baseline (contribution 3)
-  backends.py       generation backends: mock, openai-compatible, transformers
+  backends.py       generation backends: mock, transformers, vllm, openai-compatible
   datasets.py       GSM8K / MATH-500 loaders
   run.py            orchestration: build trajectories over a dataset, write results
   provenance.py     per-run manifest (config hash, seeds, versions)
@@ -62,10 +62,14 @@ The default smoke test uses a **mock** backend so the pipeline is verifiable wit
 GPU or API key. To run the actual reproduction:
 
 - **Local** (GPU): `pip install -r requirements-local.txt`, set `backend: transformers`
-  and `model.name: Qwen/Qwen2.5-7B-Instruct` in a config.
-- **Hosted** (OpenAI-compatible endpoint, e.g. a vLLM server or a cheap open-weight
-  inference provider): set `backend: openai_compatible`, `model.base_url`, and the
-  `model.api_key_env` environment variable name.
+  and `model.name: Qwen/Qwen2.5-7B-Instruct` in a config. Add `model.quantization: 4bit`
+  to fit a 7-8B model on a small (12GB) GPU (dev only; confirmatory runs are fp16).
+- **Panel throughput** (recommended for the full run): `pip install -r requirements-vllm.txt`
+  in a fresh venv, set `backend: vllm` (`configs/full-vllm.yaml`). Same true token-level
+  continuation, batched via vLLM.
+- **Hosted** (OpenAI-compatible endpoint): set `backend: openai_compatible`,
+  `model.base_url`, and `model.api_key_env`. Note: this path uses an approximate
+  prefix-in-prompt continuation, not the headline method.
 
 First real milestone: reproduce the shape signal on **Qwen2.5-7B-Instruct / GSM8K n=300**
 before scaling the panel.

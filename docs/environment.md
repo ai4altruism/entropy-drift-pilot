@@ -61,11 +61,12 @@ well inside the $100-500 ceiling with room for the pre-specified sensitivity swe
 
 > [!note] Throughput
 > The `transformers` backend issues many `generate()` calls and is the **correctness
-> reference**, not a throughput engine. For the full panel, the recommended production
-> path is a **local vLLM server hit on its completions endpoint** with the rendered chat
-> template + prefix (true token-level continuation, batched). That is a small backend
-> addition (see Open code tasks) and cuts wall-clock by an order of magnitude. Keep a
-> `transformers`-run validation subset to confirm the vLLM path matches.
+> reference**, not a throughput engine. For the full panel use the **`vllm` backend**
+> (`configs/full-vllm.yaml`): in-process vLLM with the same true token-level continuation
+> (rendered chat template + prefix as a raw prompt), batched via paged attention, an order
+> of magnitude faster. Keep a `transformers`-run validation subset to confirm the vLLM path
+> matches. Install vLLM in a fresh venv from `requirements-vllm.txt` (it pins its own
+> torch/CUDA build, so do not layer it on `requirements-local.txt`).
 
 ## 4. Software environment
 
@@ -108,8 +109,10 @@ pinned model revision + pinned deps + recorded configs, with results reported as
 4. **Anchor smoke (confirmatory, fp16 on cloud):**
    `python -m entropydrift.run --config configs/smoke.yaml` (Qwen2.5-7B / GSM8K n=300).
    Confirm the shape signal reproduces Zhao before scaling.
-5. **Panel:** duplicate `configs/full.yaml` per (model x dataset) cell with a unique
-   `run.name`; run each. Then `python scripts/fp_reduce.py results/<run-name>` per cell.
+5. **Panel (vLLM, recommended):** duplicate `configs/full-vllm.yaml` per (model x dataset)
+   cell with a unique `run.name` and a pinned `model.revision`; run each. Then
+   `python scripts/fp_reduce.py results/<run-name>` per cell. (`configs/full.yaml` is the
+   equivalent transformers path, kept as the correctness reference.)
 6. Pull `results/` down (or push to object storage); **tear down the instance** to stop
    billing.
 
@@ -125,7 +128,8 @@ pinned model revision + pinned deps + recorded configs, with results reported as
 
 Tracked so they are not lost:
 
-1. **vLLM completions backend** (true continuation, batched) for panel-scale throughput.
+1. ~~**vLLM backend**~~ **done** (in-process vLLM, true token-level continuation, batched;
+   `backend: vllm`, `configs/full-vllm.yaml`, `requirements-vllm.txt`).
 2. ~~**Incremental / resumable result writing**~~ **done** (`run.py` flushes one record
    per problem; `--resume` continues, `--overwrite` restarts; config-hash guard on resume).
 3. ~~**Extend `provenance.py`**~~ **done** (manifest `resolved` block: git commit + dirty,
