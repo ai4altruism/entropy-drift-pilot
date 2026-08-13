@@ -15,6 +15,10 @@
 
 ## 1. Background and the finding under test
 
+**The work under reproduction:** Xinghao Zhao, *Entropy Trajectory Shape Predicts LLM
+Reasoning Reliability*, [arXiv:2603.18940v2](https://arxiv.org/abs/2603.18940), 30 March
+2026 (Huazhong University of Science and Technology). Cited throughout as "Zhao (2026)".
+
 Zhao (2026) reports that for chain-of-thought answers, the **shape** of the per-step answer
 entropy trajectory (whether it decreases monotonically) predicts correctness, while the
 **magnitude** of total entropy reduction does not. We (a) independently reproduce this on
