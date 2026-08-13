@@ -139,7 +139,7 @@ Any departure from this pre-registration (parameter, model revision, analysis) i
 in a Deviations section of the paper with the reason and, where feasible, both the
 pre-registered and revised results.
 
-## 12. Sign-off items before registration (Ted)
+## 12. Sign-off items before registration
 
 1. Lock the exact **Hub revision SHAs** for the four models.
 2. Confirm **H4 framing** stays direction-agnostic (estimation, two-sided).
