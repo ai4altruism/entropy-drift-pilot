@@ -4,8 +4,13 @@ A4A's first ML-legible arXiv artifact: an independent reproduction and reasoning
 stress-test of the entropy-trajectory reasoning-reliability signal from **Zhao (2026)**,
 run as the Phase-1 pilot of the **Reasoning Drift** program.
 
-Planning artifact (goals, scope, decisions, venues) lives in the `offload` wiki:
-`wiki/analyses/entropy-drift-pilot-2026.md`. This repo holds the code and experiments.
+**The paper under reproduction:** Xinghao Zhao, *Entropy Trajectory Shape Predicts LLM
+Reasoning Reliability*, [arXiv:2603.18940v2](https://arxiv.org/abs/2603.18940), 30 March
+2026 (Huazhong University of Science and Technology).
+
+This repo holds the code and experiments. The pre-registered protocol lives in
+`docs/preregistration.md` and the compute setup in `docs/environment.md`; between them
+they carry the scope, the fixed parameters, and the analysis plan.
 
 ## What it measures
 
@@ -13,7 +18,7 @@ For a chain-of-thought answer, at each reasoning-step boundary we sample `m` sho
 completions, extract the final answer from each, compute the Shannon entropy of the
 answer distribution, and test whether that entropy trajectory decreases monotonically.
 The **shape** (is it monotone?) predicts correctness; the **magnitude** of total entropy
-drop does not. See the plan and `src/entropydrift/trajectory.py`.
+drop does not. See `docs/preregistration.md` and `src/entropydrift/trajectory.py`.
 
 ## Contributions (locked 2026-07-03)
 
@@ -35,11 +40,12 @@ src/entropydrift/   library
   metrics.py        shape-vs-magnitude stats, accuracy gaps (pure, tested)
   answers.py        GSM8K / MATH answer extraction + normalization (pure, tested)
   segment.py        step-segmentation strategies (pure, tested)
-  metrics.py        shape-vs-magnitude stats, accuracy gaps (pure, tested)
+  stats.py          bootstrap CIs (the pre-registered primary inference)
   fpreduce.py       learned triage filter vs the monotonicity baseline (contribution 3)
   backends.py       generation backends: mock, transformers, vllm, openai-compatible
   datasets.py       GSM8K / MATH-500 loaders
   run.py            orchestration: build trajectories over a dataset, write results
+  config.py         YAML config schema + validation
   provenance.py     per-run manifest (config hash, seeds, versions)
 scripts/
   smoke_test.py     end-to-end on the mock backend (no model needed)
