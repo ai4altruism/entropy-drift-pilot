@@ -1,8 +1,8 @@
 # Pre-Registration: Entropy-Trajectory Reasoning-Reliability Reproduction and Reasoning-Model Stress-Test
 
-- **Version:** draft v0.1 (2026-07-03) — DRAFT, not yet registered. Sign-off items in §12.
+- **Version:** v1.0 (2026-08-29) — sign-off complete (§12), frozen for registration.
 - **Authors:** T. Cochran (A4A); co-authorship to be decided after a draft.
-- **Registry:** Open Science Framework (OSF), Standard Pre-Registration. Register **before
+- **Registry:** Open Science Framework (OSF), schema **OSF Preregistration v4**. Register **before
   any model runs**; freeze the git commit hash of this file in the OSF entry.
 - **Study type:** computational reproduction plus a pre-specified extension. Confirmatory
   and exploratory analyses are separated explicitly (§4 vs §10).
@@ -187,6 +187,7 @@ All six items were closed by T. Cochran on 2026-08-29, before any confirmatory r
 
 ## 13. Registration logistics
 
-Create the OSF project, attach this file at its frozen commit hash, register under the
-Standard Pre-Registration template, then begin runs. Mirrors the OSF pre-registration
-pattern used for the Truthfulness Dashboards submission.
+Register from the study component rather than the parent project, attach this file at its
+frozen commit hash, register under the **OSF Preregistration v4** schema, then begin runs.
+v4 is the schema both prior A4A registrations used, which keeps this registration
+field-comparable with them.
