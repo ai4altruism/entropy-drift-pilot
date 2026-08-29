@@ -37,11 +37,30 @@ the majority final answer vs the gold answer.
 
 ## 3. Models, datasets, sample sizes
 
-- **Model panel** (exact Hub revision SHAs to be pinned at registration, §12):
-  Qwen/Qwen2.5-7B-Instruct (**anchor**), mistralai/Mistral-7B-Instruct-v0.3,
-  meta-llama/Llama-3.1-8B-Instruct, deepseek-ai/DeepSeek-R1-Distill-Qwen-7B (reasoning-distilled).
-- **Datasets:** GSM8K test (full, n = 1319) and MATH-500 (n = 500). Full test sets are
-  used; there is no data-dependent or optional stopping.
+- **Model panel**, Hub revision SHAs pinned 2026-08-29:
+
+  | Role | Model | Revision SHA |
+  |---|---|---|
+  | Anchor (matches Zhao) | `Qwen/Qwen2.5-7B-Instruct` | `a09a35458c702b33eeacc393d103063234e8bc28` |
+  | Cross-model check (matches Zhao) | `mistralai/Mistral-7B-Instruct-v0.3` | `c170c708c41dac9275d15a8fff4eca08d52bab71` |
+  | Independent standard family | `meta-llama/Llama-3.1-8B-Instruct` | `0e9e39f249a16976918f6564b8830bc894c89659` |
+  | Reasoning-distilled (stress-test) | `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B` | `916b56a44061fd5cd7d6a8fb632557ed4f724f60` |
+
+- **Pre-specified substitution for the third standard family.**
+  `meta-llama/Llama-3.1-8B-Instruct` is gated on the Hub under manual approval, and A4A's
+  access request was pending at registration. **If access has not been granted before the
+  first confirmatory run begins, `allenai/OLMo-2-1124-7B-Instruct` at revision
+  `470b1fba1ae0` substitutes into that slot**, and the substitution is reported in the
+  paper. No other slot may be substituted. This rule is fixed here so that the swap, if it
+  happens, is a pre-registered contingency and not a post-hoc deviation; it is triggered
+  only by access, never by any observed result. OLMo-2 was chosen before any data was seen,
+  on three grounds: it is a genuinely independent model family (not a Qwen or Mistral
+  derivative), it matches the anchor's size class, and its weights, data and training code
+  are all public.
+- **Datasets:** GSM8K test (full, n = 1319) and MATH-500 (n = 500). **Both are primary**;
+  neither is a secondary or confirmatory-only dataset, and H1 must hold on both to count as
+  a successful replication (§4, §9). Full test sets are used; there is no data-dependent or
+  optional stopping.
 - **Seeds:** one primary seed per (model, dataset) cell; a 3-seed robustness check is a
   pre-specified secondary analysis (§10).
 - **Precision:** all confirmatory runs are **fp16** (the same precision across the whole
@@ -139,15 +158,25 @@ Any departure from this pre-registration (parameter, model revision, analysis) i
 in a Deviations section of the paper with the reason and, where feasible, both the
 pre-registered and revised results.
 
-## 12. Sign-off items before registration
+## 12. Sign-off items: RESOLVED 2026-08-29
 
-1. Lock the exact **Hub revision SHAs** for the four models.
-2. Confirm **H4 framing** stays direction-agnostic (estimation, two-sided).
-3. Confirm **primary dataset(s)**: both GSM8K and MATH-500 as primary, or GSM8K primary and
-   MATH-500 secondary.
-4. Confirm the **multiplicity** choice (Holm-Bonferroni) and **bootstrap-CI-primary** stance.
-5. Confirm **one primary seed** with a 3-seed robustness secondary (vs 3 seeds primary).
-6. OSF project owner/title and whether the repo is linked public at registration.
+All six items were closed by T. Cochran on 2026-08-29, before any confirmatory run.
+
+1. **Hub revision SHAs locked** for all four models; see the table in §3. Pinned from the
+   Hub API on 2026-08-29. Pinning also surfaced that the Llama-3.1 repo is gated under
+   manual approval, which is why §3 now carries a pre-specified substitution rule.
+2. **H4 stays direction-agnostic.** It is estimation with a two-sided interval, not a
+   directional bet, and it is excluded from the null-testing family (§8).
+3. **Both GSM8K and MATH-500 are primary.** Recorded in §3.
+4. **Confirmed:** Holm-Bonferroni across the primary confirmatory family, with 95%
+   bootstrap CIs as the primary inferential object and p-values secondary (§4, §8).
+5. **Confirmed:** one primary seed per (model, dataset) cell, with a 3-seed robustness
+   check as a pre-specified secondary analysis (§10).
+6. **OSF structure created 2026-08-29.** Parent project *Entropy Trajectories As A
+   Reliability Signal In LLM Reasoning*, with components *Independent Replication and a
+   Reasoning-Model Stress-Test* (this study) and *Phase 2: Agentic Reliability Benchmark*
+   (placeholder, created ahead of OSF's 2026-11-16 cutoff on new components). The code
+   repository is public at registration.
 
 ## 13. Registration logistics
 
