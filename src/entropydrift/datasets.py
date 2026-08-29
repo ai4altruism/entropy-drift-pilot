@@ -1,6 +1,6 @@
 """Dataset loaders. Returns a list of Example(question, gold), gold pre-normalized.
 
-  gsm8k      HuggingFace 'gsm8k' (main config)
+  gsm8k      HuggingFace 'openai/gsm8k' (main config)
   math500    HuggingFace 'HuggingFaceH4/MATH-500'
   synthetic  offline fixtures whose golds match the mock backend (for smoke/tests)
 """
@@ -12,6 +12,11 @@ from dataclasses import dataclass
 from .answers import extract_gsm8k_gold, extract_boxed, normalize_math
 from .backends import mock_gold
 
+# Hub repo ids, pinned. Must be fully qualified "namespace/name": huggingface_hub
+# rejects bare legacy ids such as "gsm8k" with HfUriError.
+GSM8K_REPO = "openai/gsm8k"
+MATH500_REPO = "HuggingFaceH4/MATH-500"
+
 
 @dataclass
 class Example:
@@ -22,7 +27,7 @@ class Example:
 def _load_gsm8k(split: str, limit: int) -> list[Example]:
     from datasets import load_dataset
 
-    ds = load_dataset("gsm8k", "main", split=split)
+    ds = load_dataset(GSM8K_REPO, "main", split=split)
     if limit:
         ds = ds.select(range(min(limit, len(ds))))
     return [Example(x["question"], extract_gsm8k_gold(x["answer"])) for x in ds]
@@ -31,7 +36,7 @@ def _load_gsm8k(split: str, limit: int) -> list[Example]:
 def _load_math500(split: str, limit: int) -> list[Example]:
     from datasets import load_dataset
 
-    ds = load_dataset("HuggingFaceH4/MATH-500", split=split)
+    ds = load_dataset(MATH500_REPO, split=split)
     if limit:
         ds = ds.select(range(min(limit, len(ds))))
     out = []
