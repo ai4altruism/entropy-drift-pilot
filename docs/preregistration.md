@@ -46,17 +46,22 @@ the majority final answer vs the gold answer.
   | Independent standard family | `meta-llama/Llama-3.1-8B-Instruct` | `0e9e39f249a16976918f6564b8830bc894c89659` |
   | Reasoning-distilled (stress-test) | `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B` | `916b56a44061fd5cd7d6a8fb632557ed4f724f60` |
 
-- **Pre-specified substitution for the third standard family.**
-  `meta-llama/Llama-3.1-8B-Instruct` is gated on the Hub under manual approval, and A4A's
-  access request was pending at registration. **If access has not been granted before the
-  first confirmatory run begins, `allenai/OLMo-2-1124-7B-Instruct` at revision
-  `470b1fba1ae0` substitutes into that slot**, and the substitution is reported in the
-  paper. No other slot may be substituted. This rule is fixed here so that the swap, if it
-  happens, is a pre-registered contingency and not a post-hoc deviation; it is triggered
-  only by access, never by any observed result. OLMo-2 was chosen before any data was seen,
-  on three grounds: it is a genuinely independent model family (not a Qwen or Mistral
-  derivative), it matches the anchor's size class, and its weights, data and training code
-  are all public.
+- **Access to the gated model, resolved before registration.**
+  `meta-llama/Llama-3.1-8B-Instruct` is gated on the Hub under manual approval. A4A
+  requested access on 2026-08-29 and it was **granted the same day, before registration and
+  before any run**. Verified by authenticated fetch: `config.json` returns HTTP 200, and the
+  repository's revision under authentication is `0e9e39f2…`, matching the pin in the table
+  above. The panel above is therefore the panel that will run.
+- **Residual substitution rule (narrow).** If the pinned Llama-3.1 revision becomes
+  unavailable after registration, for example if access is revoked or the revision is
+  withdrawn, `allenai/OLMo-2-1124-7B-Instruct` at revision `470b1fba1ae0` substitutes into
+  that slot and the substitution is reported in the paper. No other slot may be substituted.
+  The trigger is **availability only, never an observed result**. OLMo-2 was identified as
+  the fallback on 2026-08-29, before any data was seen, on three grounds: it is a genuinely
+  independent model family (not a Qwen or Mistral derivative), it matches the anchor's size
+  class, and its weights, data and training code are all public. This rule is expected to
+  remain dormant and is recorded so that any swap would be pre-registered rather than
+  post-hoc.
 - **Datasets:** GSM8K test (full, n = 1319) and MATH-500 (n = 500). **Both are primary**;
   neither is a secondary or confirmatory-only dataset, and H1 must hold on both to count as
   a successful replication (§4, §9). Full test sets are used; there is no data-dependent or
@@ -163,8 +168,10 @@ pre-registered and revised results.
 All six items were closed by T. Cochran on 2026-08-29, before any confirmatory run.
 
 1. **Hub revision SHAs locked** for all four models; see the table in §3. Pinned from the
-   Hub API on 2026-08-29. Pinning also surfaced that the Llama-3.1 repo is gated under
-   manual approval, which is why §3 now carries a pre-specified substitution rule.
+   Hub API on 2026-08-29. Pinning surfaced that the Llama-3.1 repo is gated under manual
+   approval; access was requested and **granted on 2026-08-29, before registration**, and
+   the pinned revision was re-verified under authentication. §3 retains a narrow
+   availability-only substitution rule that is expected to stay dormant.
 2. **H4 stays direction-agnostic.** It is estimation with a two-sided interval, not a
    directional bet, and it is excluded from the null-testing family (§8).
 3. **Both GSM8K and MATH-500 are primary.** Recorded in §3.
