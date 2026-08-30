@@ -126,6 +126,7 @@ class TransformersBackend:
         name: str,
         temperature: float = 0.7,
         max_tokens: int = 150,
+        reference_max_tokens: int | None = None,
         dtype: str = "auto",
         device: str = "auto",
         quantization: str = "none",
@@ -137,6 +138,7 @@ class TransformersBackend:
         self.name = name
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.reference_budget = reference_max_tokens or max_tokens * 4
         self.quantization = quantization
         self.revision = revision or None
         self.tokenizer = AutoTokenizer.from_pretrained(name, revision=self.revision)
@@ -189,7 +191,7 @@ class TransformersBackend:
         return [self.tokenizer.decode(g, skip_special_tokens=True) for g in gen]
 
     def reference_chain(self, question: str) -> str:
-        return self._generate(self._render(question, ""), n=1, max_tokens=self.max_tokens * 4)[0]
+        return self._generate(self._render(question, ""), n=1, max_tokens=self.reference_budget)[0]
 
     def continue_from(self, question: str, prefix: str, n: int) -> list[str]:
         return self._generate(self._render(question, prefix), n=n, max_tokens=self.max_tokens)
@@ -214,6 +216,7 @@ class OpenAICompatibleBackend:
         api_key_env: str = "OPENAI_API_KEY",
         temperature: float = 0.7,
         max_tokens: int = 150,
+        reference_max_tokens: int | None = None,
         timeout: int = 120,
     ):
         self.name = name
@@ -221,6 +224,7 @@ class OpenAICompatibleBackend:
         self.api_key = os.environ.get(api_key_env, "")
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.reference_budget = reference_max_tokens or max_tokens * 4
         self.timeout = timeout
 
     def _chat(self, messages: list[dict], n: int, max_tokens: int) -> list[str]:
@@ -246,7 +250,7 @@ class OpenAICompatibleBackend:
             {"role": "system", "content": _SYSTEM},
             {"role": "user", "content": question},
         ]
-        return self._chat(messages, n=1, max_tokens=self.max_tokens * 4)[0]
+        return self._chat(messages, n=1, max_tokens=self.reference_budget)[0]
 
     def continue_from(self, question: str, prefix: str, n: int) -> list[str]:
         user = question if not prefix else (
@@ -281,6 +285,7 @@ class VLLMBackend:
         name: str,
         temperature: float = 0.7,
         max_tokens: int = 150,
+        reference_max_tokens: int | None = None,
         quantization: str | None = None,
         revision: str | None = None,
         gpu_memory_utilization: float = 0.9,
@@ -292,6 +297,7 @@ class VLLMBackend:
         self.name = name
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.reference_budget = reference_max_tokens or max_tokens * 4
         self.llm = LLM(
             model=name,
             revision=revision or None,
@@ -320,7 +326,7 @@ class VLLMBackend:
         return [o.text for o in out[0].outputs]
 
     def reference_chain(self, question: str) -> str:
-        return self._generate(self._render(question, ""), n=1, max_tokens=self.max_tokens * 4)[0]
+        return self._generate(self._render(question, ""), n=1, max_tokens=self.reference_budget)[0]
 
     def continue_from(self, question: str, prefix: str, n: int) -> list[str]:
         return self._generate(self._render(question, prefix), n=n, max_tokens=self.max_tokens)
@@ -343,6 +349,7 @@ def make_backend(cfg) -> Backend:
             name=m.name,
             temperature=cfg.sampling.temperature,
             max_tokens=cfg.sampling.max_tokens,
+            reference_max_tokens=cfg.sampling.reference_budget,
             quantization=m.quantization,
             revision=m.revision,
         )
@@ -353,12 +360,14 @@ def make_backend(cfg) -> Backend:
             api_key_env=m.api_key_env,
             temperature=cfg.sampling.temperature,
             max_tokens=cfg.sampling.max_tokens,
+            reference_max_tokens=cfg.sampling.reference_budget,
         )
     if kind == "vllm":
         return VLLMBackend(
             name=m.name,
             temperature=cfg.sampling.temperature,
             max_tokens=cfg.sampling.max_tokens,
+            reference_max_tokens=cfg.sampling.reference_budget,
             quantization=(None if m.quantization in ("none", "") else m.quantization),
             revision=m.revision,
             gpu_memory_utilization=cfg.vllm.gpu_memory_utilization,

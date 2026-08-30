@@ -46,3 +46,21 @@ def test_from_dict_empty_uses_defaults():
     c = from_dict({})
     assert c.model.quantization == "none"
     assert c.run.seed == 0
+
+
+def test_reference_budget_defaults_to_four_times_max_tokens():
+    """Default must reproduce the historical 4x behavior exactly."""
+    from entropydrift.config import SamplingCfg
+
+    assert SamplingCfg().reference_budget == 600
+    assert SamplingCfg(max_tokens=150).reference_budget == 600
+    assert SamplingCfg(max_tokens=256).reference_budget == 1024
+
+
+def test_reference_budget_is_settable_without_touching_continuations():
+    """The m continuations are the measuring instrument and must not move."""
+    from entropydrift.config import SamplingCfg
+
+    s = SamplingCfg(max_tokens=150, reference_max_tokens=1280)
+    assert s.reference_budget == 1280
+    assert s.max_tokens == 150
