@@ -1,0 +1,32 @@
+# Panel cell: r1-distill-7b x gsm8k  (reasoning-distilled stress-test (H4))
+# CONFIRMATORY. Parameters are fixed by the OSF registration osf.io/8w2q3
+# (plan: docs/preregistration.md at tag prereg-v1.0, SHA-256 036288be...873cd).
+# Do not edit sampling, segmentation, monotonicity or seed: they are registered.
+backend: vllm
+model:
+  name: deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+  revision: "916b56a44061fd5cd7d6a8fb632557ed4f724f60"
+  quantization: none          # fp16 across the whole panel (registered)
+dataset:
+  name: gsm8k
+  split: test
+  limit: 1319
+sampling:
+  m: 5
+  temperature: 0.7
+  max_tokens: 150
+segmentation:
+  strategy: blank_line
+  window_tokens: 40
+  max_steps: 8
+monotonicity:
+  eps: 0.01
+analysis:
+  n_boot: 1000
+vllm:
+  gpu_memory_utilization: 0.9
+  max_model_len: 4096
+  dtype: auto
+run:
+  seed: 0
+  name: r1-distill-7b-gsm8k

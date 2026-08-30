@@ -1,0 +1,32 @@
+# Panel cell: qwen7b x gsm8k  (anchor, matches Zhao)
+# CONFIRMATORY. Parameters are fixed by the OSF registration osf.io/8w2q3
+# (plan: docs/preregistration.md at tag prereg-v1.0, SHA-256 036288be...873cd).
+# Do not edit sampling, segmentation, monotonicity or seed: they are registered.
+backend: vllm
+model:
+  name: Qwen/Qwen2.5-7B-Instruct
+  revision: "a09a35458c702b33eeacc393d103063234e8bc28"
+  quantization: none          # fp16 across the whole panel (registered)
+dataset:
+  name: gsm8k
+  split: test
+  limit: 1319
+sampling:
+  m: 5
+  temperature: 0.7
+  max_tokens: 150
+segmentation:
+  strategy: blank_line
+  window_tokens: 40
+  max_steps: 8
+monotonicity:
+  eps: 0.01
+analysis:
+  n_boot: 1000
+vllm:
+  gpu_memory_utilization: 0.9
+  max_model_len: 4096
+  dtype: auto
+run:
+  seed: 0
+  name: qwen7b-gsm8k
