@@ -26,7 +26,8 @@ analysis:
 vllm:
   gpu_memory_utilization: 0.9
   max_model_len: 4096
-  dtype: auto
+  dtype: bfloat16          # pinned, not 'auto': the registration requires identical
+                          # precision across the panel, and 'auto' defers to each model's config
 run:
   seed: 0
   name: mistral7b-gsm8k

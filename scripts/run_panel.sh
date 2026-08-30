@@ -11,6 +11,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export PYTHONPATH=src
+# vLLM shells out to `ninja` during torch.compile. Invoking .venv/bin/python directly
+# does NOT put the venv's console scripts on PATH, so ninja is not found and the engine
+# dies with FileNotFoundError after loading the weights. Prepend it explicitly.
+export PATH="$PWD/.venv/bin:$PATH"
 PY=${PY:-.venv/bin/python}
 LOGDIR=logs; mkdir -p "$LOGDIR"
 
