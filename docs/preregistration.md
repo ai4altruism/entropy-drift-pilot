@@ -1,8 +1,8 @@
 # Pre-Registration: Entropy-Trajectory Reasoning-Reliability Reproduction and Reasoning-Model Stress-Test
 
-- **Version:** draft v0.1 (2026-07-03) — DRAFT, not yet registered. Sign-off items in §12.
+- **Version:** v1.0 (2026-08-29) — sign-off complete (§12), frozen for registration.
 - **Authors:** T. Cochran (A4A); co-authorship to be decided after a draft.
-- **Registry:** Open Science Framework (OSF), Standard Pre-Registration. Register **before
+- **Registry:** Open Science Framework (OSF), schema **OSF Preregistration v4**. Register **before
   any model runs**; freeze the git commit hash of this file in the OSF entry.
 - **Study type:** computational reproduction plus a pre-specified extension. Confirmatory
   and exploratory analyses are separated explicitly (§4 vs §10).
@@ -37,11 +37,35 @@ the majority final answer vs the gold answer.
 
 ## 3. Models, datasets, sample sizes
 
-- **Model panel** (exact Hub revision SHAs to be pinned at registration, §12):
-  Qwen/Qwen2.5-7B-Instruct (**anchor**), mistralai/Mistral-7B-Instruct-v0.3,
-  meta-llama/Llama-3.1-8B-Instruct, deepseek-ai/DeepSeek-R1-Distill-Qwen-7B (reasoning-distilled).
-- **Datasets:** GSM8K test (full, n = 1319) and MATH-500 (n = 500). Full test sets are
-  used; there is no data-dependent or optional stopping.
+- **Model panel**, Hub revision SHAs pinned 2026-08-29:
+
+  | Role | Model | Revision SHA |
+  |---|---|---|
+  | Anchor (matches Zhao) | `Qwen/Qwen2.5-7B-Instruct` | `a09a35458c702b33eeacc393d103063234e8bc28` |
+  | Cross-model check (matches Zhao) | `mistralai/Mistral-7B-Instruct-v0.3` | `c170c708c41dac9275d15a8fff4eca08d52bab71` |
+  | Independent standard family | `meta-llama/Llama-3.1-8B-Instruct` | `0e9e39f249a16976918f6564b8830bc894c89659` |
+  | Reasoning-distilled (stress-test) | `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B` | `916b56a44061fd5cd7d6a8fb632557ed4f724f60` |
+
+- **Access to the gated model, resolved before registration.**
+  `meta-llama/Llama-3.1-8B-Instruct` is gated on the Hub under manual approval. A4A
+  requested access on 2026-08-29 and it was **granted the same day, before registration and
+  before any run**. Verified by authenticated fetch: `config.json` returns HTTP 200, and the
+  repository's revision under authentication is `0e9e39f2…`, matching the pin in the table
+  above. The panel above is therefore the panel that will run.
+- **Residual substitution rule (narrow).** If the pinned Llama-3.1 revision becomes
+  unavailable after registration, for example if access is revoked or the revision is
+  withdrawn, `allenai/OLMo-2-1124-7B-Instruct` at revision `470b1fba1ae0` substitutes into
+  that slot and the substitution is reported in the paper. No other slot may be substituted.
+  The trigger is **availability only, never an observed result**. OLMo-2 was identified as
+  the fallback on 2026-08-29, before any data was seen, on three grounds: it is a genuinely
+  independent model family (not a Qwen or Mistral derivative), it matches the anchor's size
+  class, and its weights, data and training code are all public. This rule is expected to
+  remain dormant and is recorded so that any swap would be pre-registered rather than
+  post-hoc.
+- **Datasets:** GSM8K test (full, n = 1319) and MATH-500 (n = 500). **Both are primary**;
+  neither is a secondary or confirmatory-only dataset, and H1 must hold on both to count as
+  a successful replication (§4, §9). Full test sets are used; there is no data-dependent or
+  optional stopping.
 - **Seeds:** one primary seed per (model, dataset) cell; a 3-seed robustness check is a
   pre-specified secondary analysis (§10).
 - **Precision:** all confirmatory runs are **fp16** (the same precision across the whole
@@ -139,18 +163,31 @@ Any departure from this pre-registration (parameter, model revision, analysis) i
 in a Deviations section of the paper with the reason and, where feasible, both the
 pre-registered and revised results.
 
-## 12. Sign-off items before registration
+## 12. Sign-off items: RESOLVED 2026-08-29
 
-1. Lock the exact **Hub revision SHAs** for the four models.
-2. Confirm **H4 framing** stays direction-agnostic (estimation, two-sided).
-3. Confirm **primary dataset(s)**: both GSM8K and MATH-500 as primary, or GSM8K primary and
-   MATH-500 secondary.
-4. Confirm the **multiplicity** choice (Holm-Bonferroni) and **bootstrap-CI-primary** stance.
-5. Confirm **one primary seed** with a 3-seed robustness secondary (vs 3 seeds primary).
-6. OSF project owner/title and whether the repo is linked public at registration.
+All six items were closed by T. Cochran on 2026-08-29, before any confirmatory run.
+
+1. **Hub revision SHAs locked** for all four models; see the table in §3. Pinned from the
+   Hub API on 2026-08-29. Pinning surfaced that the Llama-3.1 repo is gated under manual
+   approval; access was requested and **granted on 2026-08-29, before registration**, and
+   the pinned revision was re-verified under authentication. §3 retains a narrow
+   availability-only substitution rule that is expected to stay dormant.
+2. **H4 stays direction-agnostic.** It is estimation with a two-sided interval, not a
+   directional bet, and it is excluded from the null-testing family (§8).
+3. **Both GSM8K and MATH-500 are primary.** Recorded in §3.
+4. **Confirmed:** Holm-Bonferroni across the primary confirmatory family, with 95%
+   bootstrap CIs as the primary inferential object and p-values secondary (§4, §8).
+5. **Confirmed:** one primary seed per (model, dataset) cell, with a 3-seed robustness
+   check as a pre-specified secondary analysis (§10).
+6. **OSF structure created 2026-08-29.** Parent project *Entropy Trajectories As A
+   Reliability Signal In LLM Reasoning*, with components *Independent Replication and a
+   Reasoning-Model Stress-Test* (this study) and *Phase 2: Agentic Reliability Benchmark*
+   (placeholder, created ahead of OSF's 2026-11-16 cutoff on new components). The code
+   repository is public at registration.
 
 ## 13. Registration logistics
 
-Create the OSF project, attach this file at its frozen commit hash, register under the
-Standard Pre-Registration template, then begin runs. Mirrors the OSF pre-registration
-pattern used for the Truthfulness Dashboards submission.
+Register from the study component rather than the parent project, attach this file at its
+frozen commit hash, register under the **OSF Preregistration v4** schema, then begin runs.
+v4 is the schema both prior A4A registrations used, which keeps this registration
+field-comparable with them.
