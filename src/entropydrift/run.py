@@ -39,8 +39,35 @@ def _majority(answers: list[str]) -> str:
 
 
 def _load_jsonl(path: str) -> list[dict]:
+    """Read records, keeping the FIRST record per index and tolerating a torn tail.
+
+    A crash can leave two hazards behind. The last line may be half-written, since a
+    kill can land mid-write; that line is dropped rather than aborting the resume.
+    And a record can be on disk but not yet visible to the next read, which on a
+    network filesystem lets resume reprocess an index it already has, appending a
+    second copy that then double-counts in every statistic. Deduplicating on read
+    makes resume idempotent regardless of how the previous process died.
+
+    First-write-wins is deliberate: it is a rule that never inspects the values, so
+    recovery cannot become a choice between two results.
+    """
+    seen: set = set()
+    out: list[dict] = []
     with open(path) as f:
-        return [json.loads(line) for line in f if line.strip()]
+        lines = [ln for ln in f if ln.strip()]
+    for n, line in enumerate(lines):
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            if n == len(lines) - 1:
+                continue  # torn final line from an interrupted write
+            raise
+        i = rec.get("index")
+        if i in seen:
+            continue
+        seen.add(i)
+        out.append(rec)
+    return out
 
 
 def _check_config_match(cfg: Config, manifest_path: str) -> None:
@@ -97,6 +124,7 @@ def run(
             if i in completed:
                 continue
             record = _process_one(cfg, backend, extract, eps, i, ex)
+            completed.add(i)  # belt and braces: never write an index twice in one run
             per_problem.append(record)
             out_f.write(json.dumps(record) + "\n")
             out_f.flush()
