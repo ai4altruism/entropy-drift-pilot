@@ -8,7 +8,9 @@
 #   ./scripts/run_panel.sh calibrate   # fp16 anchor at n=300, measures throughput
 #   ./scripts/run_panel.sh panel       # all 8 cells, resumable
 #   ./scripts/run_panel.sh panel qwen7b-gsm8k mistral7b-gsm8k   # named cells only
-set -euo pipefail
+# NOT `set -e`: a batch that abandons six remaining cells because one died is worse
+# than one that records the failure and continues. Cells are independent.
+set -uo pipefail
 cd "$(dirname "$0")/.."
 export PYTHONPATH=src
 # vLLM shells out to `ninja` during torch.compile. Invoking .venv/bin/python directly
@@ -46,17 +48,34 @@ preflight() {
   [ $ok -eq 0 ] && echo "  preflight OK" || { echo "  preflight FAILED"; return 1; }
 }
 
+# Expected record count for a cell, from its dataset.
+target_for() { case "$1" in *math500) echo 500;; *) echo 1319;; esac; }
+records_for() { local f="results/$1/records.jsonl"; [ -f "$f" ] && wc -l < "$f" || echo 0; }
+
 run_cell() {
   local cfg=$1 name; name=$(basename "$cfg" .yaml)
-  local log="$LOGDIR/$name.log" t0 t1
-  say "cell $name"
-  t0=$(date +%s)
-  # --resume makes an interrupted or spot-preempted cell continue rather than restart.
-  $PY -m entropydrift.run --config "$cfg" --resume >>"$log" 2>&1
-  t1=$(date +%s)
-  local n; n=$(wc -l < "results/$name/records.jsonl" 2>/dev/null || echo 0)
-  printf '   done in %dm %ds, %s records -> results/%s\n' $(( (t1-t0)/60 )) $(( (t1-t0)%60 )) "$n" "$name"
-  printf '%s\t%d\t%s\n' "$name" $((t1-t0)) "$n" >> "$LOGDIR/timings.tsv"
+  local log="$LOGDIR/$name.log" t0 t1 rc n target attempt
+  target=$(target_for "$name")
+  # One retry. --resume continues from records already written, so a retry costs
+  # only the work lost since the last flush, not the whole cell.
+  for attempt in 1 2; do
+    n=$(records_for "$name")
+    [ "$n" -ge "$target" ] && break
+    say "cell $name (attempt $attempt, $n/$target done)"
+    t0=$(date +%s)
+    $PY -m entropydrift.run --config "$cfg" --resume >>"$log" 2>&1
+    rc=$?
+    t1=$(date +%s)
+    n=$(records_for "$name")
+    printf '   exit=%d after %dm %ds, %s/%s records\n' "$rc" $(( (t1-t0)/60 )) $(( (t1-t0)%60 )) "$n" "$target"
+    printf '%s\t%d\t%s\t%d\n' "$name" $((t1-t0)) "$n" "$rc" >> "$LOGDIR/timings.tsv"
+    [ "$n" -ge "$target" ] && break
+  done
+  n=$(records_for "$name")
+  if [ "$n" -ge "$target" ]; then echo "   OK $name"; else
+    echo "   *** INCOMPLETE $name: $n/$target -- continuing to the next cell"
+    FAILED="$FAILED $name"
+  fi
 }
 
 case "${1:-panel}" in
@@ -72,8 +91,15 @@ case "${1:-panel}" in
     preflight
     shift || true
     sel=("$@"); [ ${#sel[@]} -eq 0 ] && sel=("${CELLS[@]}")
+    FAILED=""
     for c in "${sel[@]}"; do run_cell "configs/panel/$c.yaml"; done
-    say "panel complete. Timings in $LOGDIR/timings.tsv"
+    # Never claim completion the run did not achieve: say which cells finished.
+    if [ -n "$FAILED" ]; then
+      say "QUEUE FINISHED WITH FAILURES:$FAILED"
+      echo "   Re-run those cells; --resume continues from what is already written."
+      exit 1
+    fi
+    say "all requested cells complete. Timings in $LOGDIR/timings.tsv"
     echo "   Next: $PY scripts/fp_reduce.py results/<run-name>   # H5"
     ;;
   *) echo "usage: $0 {preflight|calibrate|panel [cell ...]}"; exit 2 ;;
