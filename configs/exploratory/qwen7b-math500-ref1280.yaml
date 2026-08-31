@@ -1,0 +1,43 @@
+# EXPLORATORY, not confirmatory. Labeled non-confirmatory per the registration's
+# section 10 and never used to support a confirmatory claim.
+#
+# Purpose: test whether H2's magnitude result on MATH-500 (rho +0.414, against a
+# registered criterion of abs(rho) < 0.10) is an artifact of reference-chain
+# truncation. The registered run capped chains at 600 tokens and truncated 30% of
+# them on this cell; measurement with the ceiling lifted showed the anchor's
+# longest chain is 1004 tokens, so 1280 captures the distribution with headroom.
+#
+# EVERY registered parameter is identical to configs/panel/qwen7b-math500.yaml.
+# The single change is reference_max_tokens, which lengthens the chain that gets
+# segmented WITHOUT lengthening the m=5 continuations. Those continuations are the
+# measuring instrument: changing them would change what the entropy is computed
+# over, and any difference in rho would be uninterpretable.
+backend: vllm
+model:
+  name: Qwen/Qwen2.5-7B-Instruct
+  revision: "a09a35458c702b33eeacc393d103063234e8bc28"
+  quantization: none
+dataset:
+  name: math500
+  split: test
+  limit: 500
+sampling:
+  m: 5
+  temperature: 0.7
+  max_tokens: 150
+  reference_max_tokens: 1280   # the only departure from the registered cell
+segmentation:
+  strategy: blank_line
+  window_tokens: 40
+  max_steps: 8
+monotonicity:
+  eps: 0.01
+analysis:
+  n_boot: 1000
+vllm:
+  gpu_memory_utilization: 0.9
+  max_model_len: 4096
+  dtype: bfloat16
+run:
+  seed: 0
+  name: qwen7b-math500-ref1280

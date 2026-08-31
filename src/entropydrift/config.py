@@ -21,6 +21,15 @@ class SamplingCfg:
     m: int = 5
     temperature: float = 0.7
     max_tokens: int = 150
+    # Budget for the *reference chain* only, which is segmented into prefixes.
+    # None keeps the historical behavior of 4 * max_tokens. Set it explicitly to
+    # lengthen the chain WITHOUT lengthening the m continuations: those are the
+    # measuring instrument, and changing them changes what the entropy is over.
+    reference_max_tokens: int | None = None
+
+    @property
+    def reference_budget(self) -> int:
+        return self.reference_max_tokens or self.max_tokens * 4
 
 
 @dataclass
