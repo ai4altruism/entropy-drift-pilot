@@ -116,3 +116,58 @@ def test_resume_tolerates_a_torn_final_line(tmp_path):
     )
     recs = _load_jsonl(str(p))
     assert [r["index"] for r in recs] == [0]
+
+
+def test_resume_survives_a_config_field_added_after_the_run(tmp_path):
+    """A code upgrade that adds an optional config field must not lock you out of
+    resuming runs written before it existed. Comparing whole-config hashes did:
+    the new key changed every prior run's hash though no registered parameter moved,
+    which cost a record in the 2026-09 panel."""
+    cfg = _cfg(tmp_path)
+    run(cfg, progress=False)
+    run_dir = os.path.join(str(tmp_path), "t")
+
+    # rewrite the manifest as an older version of the schema would have: without the
+    # field the code has since gained
+    manifest_path = os.path.join(run_dir, "manifest.json")
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    del manifest["config"]["sampling"]["reference_max_tokens"]
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f)
+
+    recs = _records(run_dir)
+    with open(os.path.join(run_dir, "records.jsonl"), "w") as f:
+        for r in recs[:12]:
+            f.write(json.dumps(r) + "\n")
+
+    run(cfg, progress=False, resume=True)   # must not raise
+    assert {r["index"] for r in _records(run_dir)} == set(range(30))
+
+
+def test_resume_refuses_when_the_added_field_is_actually_set(tmp_path):
+    """The permissive case above must not become a hole: a field absent from the
+    earlier run is fine only while it holds its default."""
+    cfg = _cfg(tmp_path)
+    run(cfg, progress=False)
+    run_dir = os.path.join(str(tmp_path), "t")
+
+    manifest_path = os.path.join(run_dir, "manifest.json")
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    del manifest["config"]["sampling"]["reference_max_tokens"]
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f)
+
+    cfg.sampling.reference_max_tokens = 1280
+    with pytest.raises(ValueError, match="reference_max_tokens"):
+        run(cfg, progress=False, resume=True)
+
+
+def test_resume_mismatch_names_the_offending_key(tmp_path):
+    cfg = _cfg(tmp_path)
+    run(cfg, progress=False)
+    changed = _cfg(tmp_path)
+    changed.sampling.temperature = 0.9
+    with pytest.raises(ValueError, match=r"sampling\.temperature: 0\.7 -> 0\.9"):
+        run(changed, progress=False, resume=True)

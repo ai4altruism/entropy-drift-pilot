@@ -70,16 +70,47 @@ def _load_jsonl(path: str) -> list[dict]:
     return out
 
 
+def _config_diff(prior: dict, current: dict, defaults: dict, path: str = "") -> list[str]:
+    """Config keys that genuinely differ, as readable 'key: old -> new' lines.
+
+    A key absent from ``prior`` but present in ``current`` means the schema gained a
+    field after that run was written. That is not a config change unless the field is
+    actually set. Comparing whole-config hashes flags it anyway, which locks you out of
+    resuming every earlier run the moment an unrelated option is added.
+    """
+    diffs: list[str] = []
+    for key in sorted(set(prior) | set(current)):
+        where = f"{path}{key}"
+        if key in prior and key in current:
+            pv, cv = prior[key], current[key]
+            if isinstance(pv, dict) and isinstance(cv, dict):
+                sub = defaults.get(key)
+                diffs += _config_diff(pv, cv, sub if isinstance(sub, dict) else {}, f"{where}.")
+            elif pv != cv:
+                diffs.append(f"{where}: {pv!r} -> {cv!r}")
+        elif key in current:
+            if key not in defaults or current[key] != defaults[key]:
+                diffs.append(f"{where}: (not in the earlier run) -> {current[key]!r}")
+        else:
+            diffs.append(f"{where}: {prior[key]!r} -> (dropped from the config schema)")
+    return diffs
+
+
 def _check_config_match(cfg: Config, manifest_path: str) -> None:
     """On resume, refuse to append to a run created under a different config."""
     if not os.path.exists(manifest_path):
         return
     with open(manifest_path) as f:
         prior = json.load(f)
-    current = build_manifest(cfg)["config_sha256"]
-    if prior.get("config_sha256") and prior["config_sha256"] != current:
+    prior_cfg = prior.get("config")
+    if prior_cfg is None:
+        return
+    diffs = _config_diff(prior_cfg, cfg.to_dict(), Config().to_dict())
+    if diffs:
+        detail = "\n  ".join(diffs)
         raise ValueError(
-            f"resume config mismatch: {manifest_path} was created under a different config. "
+            f"resume config mismatch: {manifest_path} was created under a different config.\n"
+            f"  {detail}\n"
             "Use a new run.name or reconcile the config."
         )
 

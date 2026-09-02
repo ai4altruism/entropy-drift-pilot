@@ -96,5 +96,9 @@ python scripts/fp_reduce.py results/<run-name>
 # writes results/<run-name>/fp_analysis.json (weights, baseline point, curve, FP reduction)
 ```
 
-The full coverage-vs-selective-accuracy `curve` is the primary artifact; the matched-point
-FP-reduction number is a convenience summary (predicted probabilities are tied at small m).
+The full coverage-vs-selective-accuracy `curve` is the primary artifact. The single
+FP-reduction number is a convenience summary and **not** a matched-coverage comparison:
+predicted probabilities are tied at small `m`, so the threshold takes whole tie blocks and
+actual coverage can land well above the baseline's. The report prints the miss when it
+happens. Where the filter wins on coverage *and* selective accuracy, state that as
+dominance rather than as a like-for-like false-positive rate.
