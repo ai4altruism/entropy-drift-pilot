@@ -91,3 +91,43 @@ def test_monotone_baseline_fields():
     b = monotone_baseline(recs)
     assert 0.0 <= b["coverage"] <= 1.0
     assert set(b) == {"coverage", "selective_acc", "false_pos_rate"}
+
+
+def test_report_does_not_claim_matched_coverage_when_it_missed():
+    """The header used to read 'matched to baseline coverage' unconditionally, while
+    tied probabilities routinely pushed actual coverage far off the target. Anyone
+    reading the output then believed a comparison that was never computed."""
+    from entropydrift.fpreduce import format_report
+
+    result = {
+        "features": ["violations", "final_confidence"],
+        "n_train": 299, "n_test": 200,
+        "weights": {"violations": -0.227, "final_confidence": 1.262},
+        "baseline_monotone": {"coverage": 0.110, "selective_acc": 0.727, "false_pos_rate": 0.273},
+        "learned_at_baseline_coverage": {
+            "coverage": 0.325, "selective_acc": 0.846, "false_pos_rate": 0.154
+        },
+        "fp_rate_reduction_pp": 11.9,
+    }
+    report = format_report(result)
+    assert "matched to baseline coverage" not in report
+    assert "coverage target 0.110" in report
+    assert "NOT a matched-coverage comparison" in report
+    assert "+0.215" in report
+
+
+def test_report_stays_quiet_when_coverage_lands_on_target():
+    from entropydrift.fpreduce import format_report
+
+    result = {
+        "features": ["violations", "final_confidence"],
+        "n_train": 299, "n_test": 200,
+        "weights": {"violations": -0.1, "final_confidence": 1.0},
+        "baseline_monotone": {"coverage": 0.333, "selective_acc": 0.115, "false_pos_rate": 0.885},
+        "learned_at_baseline_coverage": {
+            "coverage": 0.333, "selective_acc": 0.131, "false_pos_rate": 0.869
+        },
+        "fp_rate_reduction_pp": 1.6,
+    }
+    report = format_report(result)
+    assert "NOTE: coverage missed" not in report

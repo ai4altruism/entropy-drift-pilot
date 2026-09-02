@@ -221,12 +221,24 @@ def format_report(result: dict) -> str:
         f"  coverage={b['coverage']:.3f}  selective_acc={b['selective_acc']:.3f}"
         f"  false_pos_rate={b['false_pos_rate']:.3f}",
         "",
-        "LEARNED FILTER (matched to baseline coverage)",
+        f"LEARNED FILTER (coverage target {b['coverage']:.3f})",
         f"  coverage={m['coverage']:.3f}  selective_acc={m['selective_acc']:.3f}"
         f"  false_pos_rate={m['false_pos_rate']:.3f}",
         "",
         f"FALSE-POSITIVE REDUCTION: {result['fp_rate_reduction_pp']:+.1f} pp",
     ]
+    if not _isnan(m["coverage"]) and not _isnan(b["coverage"]):
+        miss = m["coverage"] - b["coverage"]
+        if abs(miss) > 0.01:
+            lines.append(
+                f"  NOTE: coverage missed its target by {miss:+.3f}"
+                f" ({b['coverage']:.3f} -> {m['coverage']:.3f}). Predicted probabilities are"
+                " tied at small m, so the threshold takes whole tie blocks."
+            )
+            lines.append(
+                "  This is NOT a matched-coverage comparison. Read the triage_curve, or"
+                " state it as dominance where the filter wins on coverage and accuracy."
+            )
     ci = result.get("fp_rate_reduction_ci_pp")
     if ci and not _isnan(ci.get("lo", float("nan"))):
         lines.append(f"  95% bootstrap CI: [{ci['lo']:+.1f}, {ci['hi']:+.1f}] pp")
