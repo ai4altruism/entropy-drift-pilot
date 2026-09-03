@@ -38,6 +38,16 @@ def _split_units(text: str, strategy: str, window_tokens: int) -> list[str]:
     raise ValueError(f"unknown segmentation strategy: {strategy!r}")
 
 
+def count_units(text: str, strategy: str = "blank_line", window_tokens: int = 40) -> int:
+    """Number of segmentation units in ``text`` *before* any ``max_steps`` cap.
+
+    Recorded per run so the cap's bite is measurable: a trajectory cannot tell you
+    whether a chain was capped, because its length also depends on how many prefixes
+    yielded an extractable answer.
+    """
+    return len(_split_units(text, strategy, window_tokens))
+
+
 def cumulative_prefixes(
     text: str,
     strategy: str = "blank_line",

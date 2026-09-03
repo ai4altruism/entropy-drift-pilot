@@ -20,6 +20,25 @@ answer distribution, and test whether that entropy trajectory decreases monotoni
 The **shape** (is it monotone?) predicts correctness; the **magnitude** of total entropy
 drop does not. See `docs/preregistration.md` and `src/entropydrift/trajectory.py`.
 
+## Reading a record
+
+Each line of `results/<run>/records.jsonl` carries the trajectory and its statistics, plus
+five per-chain diagnostics that the trajectory cannot express:
+
+| field | meaning |
+|---|---|
+| `reference_tokens` / `reference_chars` | length of the reference chain (`None` when the backend has no tokenizer) |
+| `reference_truncated` | did the chain hit `reference_max_tokens`, i.e. is it cut off |
+| `raw_units` | segmentation units **before** the `max_steps` cap |
+| `prefixes` | prefixes actually sampled, i.e. units after the cap, plus the empty prefix |
+| `extracted_prefixes` | prefixes that yielded at least one extractable answer |
+
+**`len(trajectory)` equals `extracted_prefixes`, not `prefixes`.** A prefix whose `m`
+continuations produce no parseable answer contributes no trajectory point, so trajectory
+length alone cannot tell a capped chain from a shorter one that parsed cleanly. Use
+`raw_units` to ask whether the cap bound, and `prefixes - extracted_prefixes` to ask how
+much extraction cost you.
+
 ## Contributions (locked 2026-07-03)
 
 1. **Replication** of the shape-over-magnitude dissociation + graded violation-count signal
