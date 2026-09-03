@@ -24,7 +24,7 @@ from .config import Config, load_config
 from .datasets import load_examples
 from .metrics import format_report, summarize
 from .provenance import build_manifest
-from .segment import cumulative_prefixes
+from .segment import count_units, cumulative_prefixes
 from .trajectory import coherence, entropy_trajectory, is_monotone, violation_count
 
 _METRIC_KEYS = ("monotone", "violations", "coherence", "final_confidence", "correct")
@@ -172,6 +172,29 @@ def run(
     return summary
 
 
+def _chain_diagnostics(cfg, backend, chain: str, n_prefixes: int) -> dict:
+    """Per-chain facts the trajectory cannot carry.
+
+    Trajectory length is the number of prefixes that yielded an extractable answer, so
+    on its own it distinguishes neither a capped chain from an uncapped one nor a long
+    chain from a lossy extraction. These fields separate the three.
+    """
+    tokenizer = getattr(backend, "tokenizer", None)
+    n_tokens = len(tokenizer.encode(chain)) if tokenizer is not None else None
+    budget = getattr(backend, "reference_budget", None)
+    return {
+        "reference_chars": len(chain),
+        "reference_tokens": n_tokens,
+        "reference_truncated": (
+            None if n_tokens is None or budget is None else n_tokens >= budget
+        ),
+        "raw_units": count_units(
+            chain, cfg.segmentation.strategy, cfg.segmentation.window_tokens
+        ),
+        "prefixes": n_prefixes,
+    }
+
+
 def _process_one(cfg, backend, extract, eps, i, ex) -> dict:
     """Process one example into a record. status='skipped' when no usable trajectory."""
     chain = backend.reference_chain(ex.question)
@@ -188,8 +211,11 @@ def _process_one(cfg, backend, extract, eps, i, ex) -> dict:
         if answers:
             step_answers.append(answers)
 
+    diag = _chain_diagnostics(cfg, backend, chain, len(prefixes))
+    diag["extracted_prefixes"] = len(step_answers)
+
     if len(step_answers) < 2:
-        return {"index": i, "status": "skipped"}
+        return {"index": i, "status": "skipped", **diag}
 
     traj = entropy_trajectory(step_answers)
     last = step_answers[-1]
@@ -207,6 +233,7 @@ def _process_one(cfg, backend, extract, eps, i, ex) -> dict:
         "final_confidence": final_confidence,
         "final_entropy": traj[-1],
         "correct": pred == ex.gold,
+        **diag,
     }
 
 
