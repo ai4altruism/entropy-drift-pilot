@@ -69,6 +69,7 @@ src/entropydrift/   library
 scripts/
   smoke_test.py     end-to-end on the mock backend (no model needed)
   fp_reduce.py      post-hoc false-positive-reduction analysis over a completed run
+  panel/            as-run analysis scripts behind the published panel tables
 tests/              unit tests for the pure logic
 ```
 
