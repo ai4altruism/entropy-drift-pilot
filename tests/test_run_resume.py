@@ -89,7 +89,7 @@ def test_resume_drops_duplicate_indices(tmp_path):
     reprocesses it and appends a second copy. Reading must keep only the first."""
     import json
 
-    from entropydrift.run import _load_jsonl
+    from entropydrift.run import load_jsonl
 
     p = tmp_path / "records.jsonl"
     p.write_text(
@@ -98,7 +98,7 @@ def test_resume_drops_duplicate_indices(tmp_path):
         + json.dumps({"index": 1, "correct": True}) + "\n"   # later duplicate
         + json.dumps({"index": 2, "correct": True}) + "\n"
     )
-    recs = _load_jsonl(str(p))
+    recs = load_jsonl(str(p))
     assert [r["index"] for r in recs] == [0, 1, 2]
     assert recs[1]["correct"] is False, "must keep the FIRST copy, not the later one"
 
@@ -107,14 +107,14 @@ def test_resume_tolerates_a_torn_final_line(tmp_path):
     """A kill mid-write leaves a half-written last line; it must not abort resume."""
     import json
 
-    from entropydrift.run import _load_jsonl
+    from entropydrift.run import load_jsonl
 
     p = tmp_path / "records.jsonl"
     p.write_text(
         json.dumps({"index": 0, "correct": True}) + "\n"
         + '{"index": 1, "corr'  # torn
     )
-    recs = _load_jsonl(str(p))
+    recs = load_jsonl(str(p))
     assert [r["index"] for r in recs] == [0]
 
 

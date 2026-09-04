@@ -38,7 +38,7 @@ def _majority(answers: list[str]) -> str:
     return Counter(answers).most_common(1)[0][0] if answers else ""
 
 
-def _load_jsonl(path: str) -> list[dict]:
+def load_jsonl(path: str) -> list[dict]:
     """Read records, keeping the FIRST record per index and tolerating a torn tail.
 
     A crash can leave two hazards behind. The last line may be half-written, since a
@@ -96,7 +96,7 @@ def _config_diff(prior: dict, current: dict, defaults: dict, path: str = "") -> 
     return diffs
 
 
-def _check_config_match(cfg: Config, manifest_path: str) -> None:
+def check_config_match(cfg: Config, manifest_path: str) -> None:
     """On resume, refuse to append to a run created under a different config."""
     if not os.path.exists(manifest_path):
         return
@@ -129,8 +129,8 @@ def run(
 
     existing: list[dict] = []
     if os.path.exists(records_path) and resume and not overwrite:
-        existing = _load_jsonl(records_path)
-        _check_config_match(cfg, manifest_path)
+        existing = load_jsonl(records_path)
+        check_config_match(cfg, manifest_path)
     elif os.path.exists(records_path) and not overwrite:
         raise FileExistsError(
             f"{records_path} already exists. Pass resume=True/--resume to continue, "
@@ -172,12 +172,16 @@ def run(
     return summary
 
 
-def _chain_diagnostics(cfg, backend, chain: str, n_prefixes: int) -> dict:
+def chain_diagnostics(cfg, backend, chain: str, n_prefixes: int) -> dict:
     """Per-chain facts the trajectory cannot carry.
 
     Trajectory length is the number of prefixes that yielded an extractable answer, so
     on its own it distinguishes neither a capped chain from an uncapped one nor a long
     chain from a lossy extraction. These fields separate the three.
+
+    Public because ``refscan`` reuses it verbatim: a diagnostic scan is only meaningful
+    if its counts mean exactly what the same-named fields in a cell's records mean, and
+    a reimplementation would be free to drift out of agreement.
     """
     tokenizer = getattr(backend, "tokenizer", None)
     n_tokens = len(tokenizer.encode(chain)) if tokenizer is not None else None
@@ -211,7 +215,7 @@ def _process_one(cfg, backend, extract, eps, i, ex) -> dict:
         if answers:
             step_answers.append(answers)
 
-    diag = _chain_diagnostics(cfg, backend, chain, len(prefixes))
+    diag = chain_diagnostics(cfg, backend, chain, len(prefixes))
     diag["extracted_prefixes"] = len(step_answers)
 
     if len(step_answers) < 2:

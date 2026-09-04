@@ -53,7 +53,7 @@ much extraction cost you.
 
 ```
 docs/               environment.md (compute setup), preregistration.md (OSF pre-reg)
-configs/            YAML run configs (smoke, full)
+configs/            YAML run configs (smoke, full, panel, exploratory, diagnostic)
 src/entropydrift/   library
   trajectory.py     entropy / monotonicity / violation-count (pure, tested)
   metrics.py        shape-vs-magnitude stats, accuracy gaps (pure, tested)
@@ -64,6 +64,7 @@ src/entropydrift/   library
   backends.py       generation backends: mock, transformers, vllm, openai-compatible
   datasets.py       GSM8K / MATH-500 loaders
   run.py            orchestration: build trajectories over a dataset, write results
+  refscan.py        reference-only diagnostic scan: measure the chain, skip the trajectory
   config.py         YAML config schema + validation
   provenance.py     per-run manifest (config hash, seeds, versions)
 scripts/
@@ -103,6 +104,35 @@ before scaling the panel.
 ```bash
 python -m entropydrift.run --config configs/smoke.yaml
 ```
+
+## Reference-only diagnostic scan
+
+Some questions are about the **reference chain**, not the trajectory built on it: whether
+a token budget still truncates, or how much of a spike in trajectory length the
+`max_steps` cap alone accounts for. A cell cannot answer them cheaply, because almost all
+of its cost is the `m` continuations at every prefix, and none of that work bears on the
+question. `refscan` generates the reference chains and nothing else.
+
+```bash
+python -m entropydrift.refscan --config configs/diagnostic/qwen7b-math500-refscan-600.yaml
+python -m entropydrift.refscan --config configs/diagnostic/qwen7b-math500-refscan-1280.yaml
+# each writes results/<run-name>/{ref_records.jsonl, ref_manifest.json, ref_summary.json}
+```
+
+Run the pair: a single budget has nothing to compare against, and the registered cells
+recorded no reference-chain token counts, so 600's own distribution was never measured
+either. `--resume` continues an interrupted scan, and refuses to append to one started
+under a different budget. `--batch-size` (default 32) sets how many chains go to the
+backend per call; vLLM serves them in one pass, which is what makes a scan cheap.
+
+**A scan is a diagnostic, not a cell.** It computes no entropy, scores no hypothesis, and
+writes no quantity the registration mentions: its records have no `trajectory` field to
+score. Two limits it does not paper over. Generation is sampled at temperature 0.7 and
+vLLM is not bit-reproducible under a fixed seed, so a scan characterizes the chain-length
+*distribution* a config produces rather than recovering the chains an earlier run
+generated. And on the cap-versus-extraction question it gives a **bound**, not an answer:
+`raw_units` and `prefixes` say how much of a spike the cap can explain, while measuring
+the extraction loss on top of that still needs the continuations.
 
 ## False-positive reduction (contribution 3)
 

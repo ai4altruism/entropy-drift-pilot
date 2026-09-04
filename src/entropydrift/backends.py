@@ -328,6 +328,27 @@ class VLLMBackend:
     def reference_chain(self, question: str) -> str:
         return self._generate(self._render(question, ""), n=1, max_tokens=self.reference_budget)[0]
 
+    def reference_chains(self, questions: list[str]) -> list[str]:
+        """One reference chain per question, served in a single batched pass.
+
+        Used by the reference-only diagnostic scan, never by a cell. The panel walks one
+        problem and one prefix at a time on purpose: that is the registered execution
+        path, and restructuring it to save GPU-hours would perturb a registered run to
+        save $20. A scan is off that path entirely and generates nothing but reference
+        chains, so batching there costs no registered property and is the whole reason a
+        scan takes minutes where a cell takes hours.
+
+        vLLM returns outputs in prompt order, so the caller can zip them back.
+        """
+        from vllm import SamplingParams
+
+        prompts = [self._render(q, "") for q in questions]
+        sp = SamplingParams(
+            n=1, temperature=self.temperature, max_tokens=self.reference_budget
+        )
+        out = self.llm.generate(prompts, sp, use_tqdm=False)
+        return [o.outputs[0].text for o in out]
+
     def continue_from(self, question: str, prefix: str, n: int) -> list[str]:
         return self._generate(self._render(question, prefix), n=n, max_tokens=self.max_tokens)
 
