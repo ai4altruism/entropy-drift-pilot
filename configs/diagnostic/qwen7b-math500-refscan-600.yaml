@@ -1,0 +1,47 @@
+# DIAGNOSTIC, not confirmatory, and not a cell. Run with `entropydrift.refscan`, which
+# generates reference chains only: no continuations, no entropy, no hypothesis scored.
+#
+# Purpose: the paired 600-token arm of the reference-chain measurement the panel never
+# took. Two open questions in wiki/analyses/entropy-drift-results-summary.md need it:
+#   1. Whether 1280 removes truncation or only reduces it. The registered cells recorded
+#      no reference-chain token counts, so 600's own distribution was never measured
+#      either, and a single-budget scan would have nothing to compare against.
+#   2. How much of the spike at 8 trajectory points the max_steps cap alone explains,
+#      which the raw_units distribution bounds.
+#
+# EVERY parameter matches configs/panel/qwen7b-math500.yaml except run.name. The budget
+# is written out as 600 rather than left implicit at 4 x max_tokens so that this file and
+# its 1280 counterpart differ in exactly one legible line.
+#
+# This is an INDEPENDENT GENERATION at temperature 0.7, not a replay of the registered
+# cell. It characterizes the distribution that config produces; it does not recover the
+# chains that cell generated, and vLLM is not bit-reproducible under seed 0.
+backend: vllm
+model:
+  name: Qwen/Qwen2.5-7B-Instruct
+  revision: "a09a35458c702b33eeacc393d103063234e8bc28"
+  quantization: none
+dataset:
+  name: math500
+  split: test
+  limit: 500
+sampling:
+  m: 5                         # unused by a scan; kept so the config stays comparable
+  temperature: 0.7
+  max_tokens: 150
+  reference_max_tokens: 600    # the registered cell's effective budget, made explicit
+segmentation:
+  strategy: blank_line
+  window_tokens: 40
+  max_steps: 8
+monotonicity:
+  eps: 0.01
+analysis:
+  n_boot: 1000
+vllm:
+  gpu_memory_utilization: 0.9
+  max_model_len: 4096
+  dtype: bfloat16
+run:
+  seed: 0
+  name: refscan-qwen7b-math500-600
