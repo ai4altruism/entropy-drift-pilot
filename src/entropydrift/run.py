@@ -24,7 +24,7 @@ from .config import Config, load_config
 from .datasets import load_examples
 from .metrics import format_report, summarize
 from .provenance import build_manifest
-from .segment import count_units, cumulative_prefixes
+from .segment import capped_units, count_units, cumulative_prefixes
 from .trajectory import coherence, entropy_trajectory, is_monotone, violation_count
 
 _METRIC_KEYS = ("monotone", "violations", "coherence", "final_confidence", "correct")
@@ -202,21 +202,44 @@ def chain_diagnostics(cfg, backend, chain: str, n_prefixes: int) -> dict:
 def _process_one(cfg, backend, extract, eps, i, ex) -> dict:
     """Process one example into a record. status='skipped' when no usable trajectory."""
     chain = backend.reference_chain(ex.question)
-    prefixes = cumulative_prefixes(
-        chain,
+    seg = dict(
         strategy=cfg.segmentation.strategy,
         window_tokens=cfg.segmentation.window_tokens,
         max_steps=cfg.segmentation.max_steps,
     )
+    prefixes = cumulative_prefixes(chain, **seg)
+    capture = getattr(cfg.run, "capture_text", False)
+
     step_answers: list[list[str]] = []
+    prefix_traces: list[dict] = []
     for pfx in prefixes:
         comps = backend.continue_from(ex.question, pfx, cfg.sampling.m)
-        answers = [a for a in (extract(c) for c in comps) if a]
+        extracted = [extract(c) for c in comps]
+        answers = [a for a in extracted if a]
+        if capture:
+            # Keep the parse failures as explicit nulls: how often extraction fails per
+            # prefix is the quantity a scan cannot reach, and dropping them silently is
+            # what made trajectory length uninterpretable as a unit count.
+            prefix_traces.append(
+                {
+                    "prefix_chars": len(pfx),
+                    "continuations": comps,
+                    "extracted": [a if a else None for a in extracted],
+                }
+            )
         if answers:
             step_answers.append(answers)
 
     diag = chain_diagnostics(cfg, backend, chain, len(prefixes))
     diag["extracted_prefixes"] = len(step_answers)
+    if capture:
+        # Skipped records carry the trace too: a chain the segmenter could not split is
+        # exactly the case worth looking at, and it is the one that gets dropped.
+        diag["trace"] = {
+            "reference_text": chain,
+            "units": capped_units(chain, **seg),
+            "prefix_traces": prefix_traces,
+        }
 
     if len(step_answers) < 2:
         return {"index": i, "status": "skipped", **diag}

@@ -48,6 +48,26 @@ def count_units(text: str, strategy: str = "blank_line", window_tokens: int = 40
     return len(_split_units(text, strategy, window_tokens))
 
 
+def capped_units(
+    text: str,
+    strategy: str = "blank_line",
+    window_tokens: int = 40,
+    max_steps: int | None = None,
+) -> list[str]:
+    """The units a run actually measures, after ``max_steps`` merges the tail.
+
+    Exposed so a traced run can record where the boundaries fell without duplicating
+    the capping rule. ``cumulative_prefixes`` is defined in terms of this, so the two
+    cannot drift.
+    """
+    units = _split_units(text, strategy, window_tokens)
+    if max_steps is not None and len(units) > max_steps:
+        head = units[: max_steps - 1]
+        tail = " ".join(units[max_steps - 1 :])
+        units = head + [tail]
+    return units
+
+
 def cumulative_prefixes(
     text: str,
     strategy: str = "blank_line",
@@ -61,11 +81,7 @@ def cumulative_prefixes(
     ``max_steps`` optionally caps the number of *units* (useful to bound compute); when
     set, later units are merged into the final prefix.
     """
-    units = _split_units(text, strategy, window_tokens)
-    if max_steps is not None and len(units) > max_steps:
-        head = units[: max_steps - 1]
-        tail = " ".join(units[max_steps - 1 :])
-        units = head + [tail]
+    units = capped_units(text, strategy, window_tokens, max_steps)
 
     prefixes = [""]
     acc: list[str] = []

@@ -69,6 +69,11 @@ class RunCfg:
     seed: int = 0
     out_dir: str = "results"
     name: str = "run"
+    # Keep the text a run would otherwise discard: the reference chain, the units the
+    # cap actually produced, and every continuation with the answer extracted from it.
+    # Logging only; it changes nothing the harness computes. Default False so the
+    # confirmatory path serializes exactly as it did before this field existed.
+    capture_text: bool = False
 
 
 @dataclass
