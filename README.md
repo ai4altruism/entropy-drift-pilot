@@ -1,8 +1,10 @@
 # entropy-drift-pilot
 
-A4A's first ML-legible arXiv artifact: an independent reproduction and reasoning-model
-stress-test of the entropy-trajectory reasoning-reliability signal from **Zhao (2026)**,
-run as the Phase-1 pilot of the **Reasoning Drift** program.
+Code and experiments for an independent, preregistered reproduction of the
+entropy-trajectory reliability signal reported by **Zhao (2026)**, with a stress test on a
+reasoning-distilled model, run as the first phase of the **Reasoning Drift** program. The
+paper is [arXiv:2609.19606](https://arxiv.org/abs/2609.19606) and the registration is
+[osf.io/8w2q3](https://osf.io/8w2q3).
 
 **The paper under reproduction:** Xinghao Zhao, *Entropy Trajectory Shape Predicts LLM
 Reasoning Reliability*, [arXiv:2603.18940v2](https://arxiv.org/abs/2603.18940), 30 March
